@@ -1,0 +1,3084 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>旅遊行程 JSON 安全工具 v2</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1c2430;
+    --muted: #5f6c7b;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-soft: #eff6ff;
+    --teal: #0f766e;
+    --teal-hover: #115e59;
+    --teal-soft: #f0fdfa;
+    --teal-border: #99f6e4;
+    --success: #15803d;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --danger: #b91c1c;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --warn: #b45309;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --purple: #6d28d9;
+    --purple-bg: #f5f3ff;
+    --radius: 14px;
+    --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    padding: 0 0 84px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    color: #fff;
+    padding: 18px 16px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    box-shadow: 0 2px 12px rgba(30, 58, 138, 0.22);
+    transition: background 0.25s;
+  }
+  header.mode-new {
+    background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+    box-shadow: 0 2px 12px rgba(15, 118, 110, 0.24);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 18.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ver-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.2);
+    letter-spacing: 0.4px;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    opacity: 0.9;
+  }
+
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 12px;
+    background: rgba(15, 23, 42, 0.22);
+    padding: 4px;
+    border-radius: 11px;
+  }
+  .mode-tab {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 10px;
+    min-height: 40px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: transparent;
+    color: rgba(255,255,255,0.84);
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  }
+  .mode-tab.active {
+    background: #fff;
+    color: #1e3a8a;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.14);
+  }
+  header.mode-new .mode-tab.active {
+    color: #0f766e;
+  }
+
+  .container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 14px 12px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-badge.teal { background: var(--teal); }
+  .step-badge.green { background: var(--success); }
+  .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .step-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 2px 0 0;
+  }
+
+  .file-drop {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px 14px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+  }
+  .file-drop.teal:hover, .file-drop.teal.dragover {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+  }
+  .file-drop input { display: none; }
+  .file-drop .icon { font-size: 28px; margin-bottom: 4px; }
+  .file-drop .label { font-weight: 600; color: var(--primary); }
+  .file-drop.teal .label { color: var(--teal); }
+  .file-drop .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .metric {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .metric .val {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .metric .lbl {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  input[type="text"], input[type="date"] {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+  }
+  input[type="text"]:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  .date-summary-bar {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--teal-soft);
+    border: 1px solid var(--teal-border);
+    color: #115e59;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .top-fields-box {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+  }
+  .top-fields-box .box-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .top-field-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .top-field-item:first-of-type { border-top: none; }
+  .top-field-item label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+  }
+  .top-field-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--teal);
+    flex-shrink: 0;
+  }
+  .field-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .field-badge.clear { background: #e2e8f0; color: #334155; }
+  .field-badge.keep { background: var(--teal-soft); color: var(--teal); border: 1px solid var(--teal-border); }
+  .field-badge.imgwarn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 14px;
+    min-height: 44px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: opacity 0.15s, transform 0.05s, background 0.15s;
+  }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; flex: 1 1 180px; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn-teal { background: var(--teal); color: #fff; flex: 1 1 180px; }
+  .btn-teal:hover:not(:disabled) { background: var(--teal-hover); }
+  .btn-success { background: var(--success); color: #fff; flex: 1 1 180px; }
+  .btn-secondary { background: #e2e8f0; color: var(--text); flex: 1 1 130px; }
+  .btn-outline { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); flex: 1 1 140px; }
+  .btn-outline-teal { background: #fff; color: var(--teal); border: 1.5px solid var(--teal); flex: 1 1 140px; }
+  .btn-danger-outline { background: #fff; color: var(--danger); border: 1.5px solid var(--danger-border); }
+  .btn-sm { min-height: 36px; padding: 6px 12px; font-size: 13px; flex: 0 1 auto; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 13.5px;
+  }
+  .toggle-row label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 0;
+  }
+  .toggle-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+  }
+  .toggle-row.teal input[type="checkbox"] {
+    accent-color: var(--teal);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 170px;
+    padding: 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    resize: vertical;
+    background: #fcfdff;
+    color: var(--text);
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  textarea.teal:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  .alert {
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 13.5px;
+    margin-top: 10px;
+    word-break: break-word;
+  }
+  .alert-error { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger); }
+  .alert-success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success); }
+  .alert-warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn); }
+  .alert-info { background: var(--primary-soft); border: 1px solid #bfdbfe; color: #1e40af; }
+
+  .checks-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .check-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+  }
+
+  .diff-section { margin-top: 12px; }
+  .diff-group-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    margin: 12px 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .diff-item {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fafbfc;
+    font-size: 13.5px;
+  }
+  .diff-item.del { border-left-color: var(--danger); background: var(--danger-bg); }
+  .diff-item.add { border-left-color: var(--success); background: var(--success-bg); }
+  .diff-item.move { border-left-color: var(--purple); background: var(--purple-bg); }
+  .diff-item.day { border-left-color: #d97706; background: var(--warn-bg); }
+  .diff-item.reorder { border-left-color: #0284c7; background: #f0f9ff; }
+  .diff-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .diff-kv {
+    margin: 4px 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .diff-kv li {
+    margin: 3px 0;
+    word-break: break-word;
+  }
+  .old-val {
+    text-decoration: line-through;
+    color: #991b1b;
+    background: rgba(254, 202, 202, 0.45);
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .new-val {
+    color: #166534;
+    background: rgba(187, 247, 208, 0.55);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .day-preview-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .day-preview-head {
+    background: #f8fafc;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .day-preview-head .dn-tag {
+    background: var(--teal);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-right: 6px;
+  }
+  .day-preview-body {
+    padding: 8px 12px;
+  }
+  .ev-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 13.5px;
+  }
+  .ev-row:last-child { border-bottom: none; }
+  .ev-time {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    min-width: 54px;
+    color: var(--teal);
+  }
+  .ev-time.ref { color: var(--muted); font-weight: 600; }
+  .kind-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #fef3c7;
+    color: #92400e;
+    margin-left: 5px;
+  }
+  .memo-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #e0f2fe;
+    color: #0369a1;
+    margin-left: 5px;
+  }
+
+  .delete-confirm-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--danger-bg);
+    border: 1.5px solid var(--danger-border);
+    color: var(--danger);
+    font-weight: 600;
+    font-size: 13.5px;
+  }
+  .delete-confirm-box label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .delete-confirm-box input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--danger);
+    flex-shrink: 0;
+  }
+
+  .history-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  details {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fafafa;
+  }
+  details summary {
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  pre.code-preview {
+    margin: 8px 0 0;
+    padding: 10px;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    overflow-x: auto;
+    max-height: 260px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #0f172a;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 999;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .hidden { display: none !important; }
+  @media (max-width: 480px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header id="appHeader">
+  <h1>🧭 旅遊行程 JSON 安全工具 <span class="ver-pill">v2</span></h1>
+  <p id="headerSub">純瀏覽器離線運算・不修改原網站・8/8 強制防呆驗收（零誤改、零遺失）</p>
+  <div class="mode-tabs" role="tablist">
+    <button type="button" class="mode-tab active" id="tabPatch" role="tab" aria-selected="true">🔧 修補既有行程</button>
+    <button type="button" class="mode-tab" id="tabNew" role="tab" aria-selected="false">🆕 舊檔建新旅程</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- =====================================================================
+       MODE 1: PATCH EXISTING ITINERARY (8/8 STRICT VERIFICATION)
+       ===================================================================== -->
+  <div id="patchModeView">
+
+    <!-- STEP 1 -->
+    <section class="card" id="step1Card">
+      <div class="step-header">
+        <span class="step-badge">1</span>
+        <div>
+          <h2 class="step-title">載入原網站匯出的行程 JSON</h2>
+          <div class="step-sub">檔案僅在你的手機／電腦瀏覽器中處理，不會上傳到任何伺服器</div>
+        </div>
+      </div>
+
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="fileInput" accept=".json,application/json">
+        <div class="icon">📂</div>
+        <div class="label" id="fileDropLabel">點此選擇 .json 檔案（或拖曳至此）</div>
+        <div class="hint">支援含 Base64 圖片、HTML 筆記與參考卡的完整行程檔</div>
+      </div>
+
+      <div id="fileAlert"></div>
+
+      <div id="summaryWrap" class="hidden">
+        <div class="metrics-grid" id="metricsGrid"></div>
+        <div class="history-bar" id="historyBar">
+          <div>
+            <strong id="fileNameBadge">-</strong>
+            <div style="font-size:12px;color:var(--muted)" id="versionStatus">目前為原始載入版本（尚未套用修補）</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="btn-secondary btn-sm hidden" id="btnUndo">↩️ 復原上一步</button>
+            <button type="button" class="btn-danger-outline btn-sm hidden" id="btnReset">🔄 重置回原檔</button>
+            <button type="button" class="btn-outline btn-sm hidden" id="btnDownloadCurrent">⬇️ 下載目前版本</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="card disabled" id="step2Card">
+      <div class="step-header">
+        <span class="step-badge">2</span>
+        <div>
+          <h2 class="step-title">複製輕量行程與規則給 AI</h2>
+          <div class="step-sub">自動隱藏 Base64 圖片與冗長 HTML，讓 Gemini／Claude／ChatGPT 只輸出修改指令</div>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label>
+          <input type="checkbox" id="optIncludeMemoText" checked>
+          <span>保留筆記純文字摘要（前 100 字，供 AI 了解背景）</span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="btnCopyFullPrompt">📋 複製「AI 提示詞＋輕量行程」</button>
+        <button type="button" class="btn-outline" id="btnCopyLightOnly">📄 僅複製輕量行程</button>
+      </div>
+
+      <details>
+        <summary>預覽輕量行程與推斷的欄位結構（點擊展開）</summary>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;" id="lightStats"></div>
+        <pre class="code-preview" id="lightPreview"></pre>
+      </details>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="card disabled" id="step3Card">
+      <div class="step-header">
+        <span class="step-badge">3</span>
+        <div>
+          <h2 class="step-title">貼上 AI 產出的修改指令（JSON Patch）</h2>
+          <div class="step-sub">直接整段貼上即可，會自動去除 ```json 標記並執行 8 項強制驗收</div>
+        </div>
+      </div>
+
+      <textarea id="patchInput" placeholder='貼上 AI 輸出的 JSON 修改指令，例如：
+{
+  "modify": [
+    { "id": "abc12345", "fields": { "time": "10:30" }, "append_memo": "<p>記得預約</p>" }
+  ],
+  "reorder_dates": ["2027-05-03"]
+}'></textarea>
+
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="btnPreviewPatch">🔍 驗證並預覽差異</button>
+        <button type="button" class="btn-secondary" id="btnPasteClip">📥 貼上剪貼簿</button>
+        <button type="button" class="btn-secondary btn-sm" id="btnClearPatch">清空</button>
+      </div>
+
+      <details>
+        <summary>查看支援的修改指令格式範例</summary>
+        <pre class="code-preview">{
+  "modify": [
+    {
+      "id": "8碼活動id",
+      "fields": { "time": "10:30", "title": "新標題" },
+      "append_memo": "&lt;p&gt;追加筆記HTML&lt;/p&gt;",
+      "create_memo_if_missing": false
+    }
+  ],
+  "move": [
+    { "id": "8碼活動id", "to_date": "YYYY-MM-DD", "insert_index": null }
+  ],
+  "add": [
+    {
+      "date": "YYYY-MM-DD",
+      "kind": "",
+      "insert_index": null,
+      "fields": { "time": "14:00", "title": "新景點" },
+      "memo_html": ""
+    }
+  ],
+  "delete": ["明確同意刪除的id"],
+  "day_modify": [
+    { "date": "YYYY-MM-DD", "fields": { "title": "新日標題", "note": "日備註" } }
+  ],
+  "reorder_dates": ["YYYY-MM-DD"],
+  "top_modify": {}
+}</pre>
+      </details>
+
+      <div id="patchError"></div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="card hidden" id="step4Card">
+      <div class="step-header">
+        <span class="step-badge green">4</span>
+        <div>
+          <h2 class="step-title">差異預覽與 8/8 驗收結果</h2>
+          <div class="step-sub">確認下方每筆異動都符合預期，再套用或下載新檔</div>
+        </div>
+      </div>
+
+      <div id="verifyBanner"></div>
+      <div class="checks-wrap" id="checksWrap"></div>
+      <div class="diff-section" id="diffContainer"></div>
+
+      <div id="deleteConfirmWrap" class="delete-confirm-box hidden">
+        <label>
+          <input type="checkbox" id="chkConfirmDelete">
+          <span id="deleteConfirmText">我已確認要永久刪除上述活動</span>
+        </label>
+      </div>
+
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="button" class="btn-success" id="btnApplyAndDownload">✅ 套用並下載新 JSON</button>
+        <button type="button" class="btn-outline" id="btnApplyOnly">📌 僅套用（繼續下一輪修改）</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- =====================================================================
+       MODE 2: CREATE NEW TRIP FROM EXISTING TEMPLATE JSON (6/6 VERIFICATION)
+       ===================================================================== -->
+  <div id="newModeView" class="hidden">
+
+    <!-- NEW STEP 1 -->
+    <section class="card" id="newStep1Card">
+      <div class="step-header">
+        <span class="step-badge teal">1</span>
+        <div>
+          <h2 class="step-title">載入任一舊旅程 JSON 當格式範本</h2>
+          <div class="step-sub">只擷取網站欄位結構與型別，自動清空舊行程、舊圖片與舊筆記，絕不殘留</div>
+        </div>
+      </div>
+
+      <div class="file-drop teal" id="tplFileDrop">
+        <input type="file" id="tplFileInput" accept=".json,application/json">
+        <div class="icon">🗂️</div>
+        <div class="label" id="tplFileDropLabel">點此選擇任一份舊旅程 .json（作為格式範本）</div>
+        <div class="hint">檔案不離開手機瀏覽器，所有舊行程與 Base64 圖片都會自動淨空</div>
+      </div>
+
+      <div class="btn-row hidden" id="reuseFromPatchWrap">
+        <button type="button" class="btn-outline-teal" id="btnReuseFromPatch">🔗 直接沿用「修補模式」已載入的範本檔</button>
+      </div>
+
+      <div id="tplAlert"></div>
+
+      <div id="tplSummaryWrap" class="hidden">
+        <div class="metrics-grid" id="tplMetricsGrid"></div>
+      </div>
+    </section>
+
+    <!-- NEW STEP 2 -->
+    <section class="card disabled" id="newStep2Card">
+      <div class="step-header">
+        <span class="step-badge teal">2</span>
+        <div>
+          <h2 class="step-title">設定新旅程日期並複製 AI 提示詞</h2>
+          <div class="step-sub">填好名稱與起訖日，複製提示詞貼給 AI 幫你規劃或整理新行程</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label for="newTripTitle">新旅程名稱</label>
+          <input type="text" id="newTripTitle" placeholder="例如：2027 北海道慢旅">
+        </div>
+        <div class="form-group">
+          <label for="newStartDate">出發日期（D1）</label>
+          <input type="date" id="newStartDate">
+        </div>
+        <div class="form-group">
+          <label for="newEndDate">回程日期（最後一天）</label>
+          <input type="date" id="newEndDate">
+        </div>
+      </div>
+
+      <div id="newDateSummary" class="date-summary-bar hidden"></div>
+      <div id="newDateError"></div>
+
+      <div id="extraTopFieldsBox" class="top-fields-box hidden">
+        <div class="box-title">其他頂層欄位處理（預設清空舊旅程資料，可按需勾選沿用）</div>
+        <div id="extraTopFieldsList"></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="button" class="btn-teal" id="btnCopyNewTripPrompt">📋 複製「新建旅程專用 AI 提示詞」</button>
+        <button type="button" class="btn-outline-teal" id="btnBuildEmptyShell">📄 直接產生空白骨架檔</button>
+      </div>
+
+      <details>
+        <summary>檢視從範本推斷出的欄位與合法 kind（點擊展開）</summary>
+        <pre class="code-preview" id="tplSchemaPreview"></pre>
+      </details>
+    </section>
+
+    <!-- NEW STEP 3 -->
+    <section class="card disabled" id="newStep3Card">
+      <div class="step-header">
+        <span class="step-badge teal">3</span>
+        <div>
+          <h2 class="step-title">貼上 AI 整理好的新行程 JSON</h2>
+          <div class="step-sub">自動生成全新 8 碼 ID、補齊原網站必備欄位，並執行 6/6 強制驗收</div>
+        </div>
+      </div>
+
+      <textarea class="teal" id="newTripInput" placeholder='貼上 AI 輸出的新行程 JSON，例如：
+{
+  "days": [
+    {
+      "date": "2027-05-01",
+      "title": "抵達・老城散步",
+      "note": "",
+      "events": [
+        { "kind": "", "fields": { "time": "14:00", "title": "飯店寄放行李" }, "memo_html": "<p>備註</p>" }
+      ]
+    }
+  ]
+}'></textarea>
+
+      <div class="toggle-row teal">
+        <label>
+          <input type="checkbox" id="optAutoSortNewTrip" checked>
+          <span>自動依時間（HH:MM）排序每日活動（參考卡留原位）</span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-teal" id="btnPreviewNewTrip">🔍 驗證並預覽新旅程</button>
+        <button type="button" class="btn-secondary" id="btnPasteNewClip">📥 貼上剪貼簿</button>
+        <button type="button" class="btn-secondary btn-sm" id="btnClearNewTrip">清空</button>
+      </div>
+
+      <details>
+        <summary>查看支援的新行程 JSON 格式範例</summary>
+        <pre class="code-preview">{
+  "days": [
+    {
+      "date": "YYYY-MM-DD",
+      "title": "本日主題標題",
+      "note": "選填日備註",
+      "events": [
+        {
+          "kind": "",
+          "fields": { "time": "09:30", "title": "景點名稱" },
+          "memo_html": "&lt;p&gt;選填筆記&lt;/p&gt;"
+        },
+        {
+          "kind": "餐廳",
+          "fields": { "time": "12:00", "title": "午餐餐廳" }
+        }
+      ]
+    }
+  ]
+}</pre>
+      </details>
+
+      <div id="newTripError"></div>
+    </section>
+
+    <!-- NEW STEP 4 -->
+    <section class="card hidden" id="newStep4Card">
+      <div class="step-header">
+        <span class="step-badge green">4</span>
+        <div>
+          <h2 class="step-title">新旅程預覽與 6/6 驗收結果</h2>
+          <div class="step-sub">確認所有天數、活動與欄位無誤，即可下載匯入原網站</div>
+        </div>
+      </div>
+
+      <div id="newVerifyBanner"></div>
+      <div class="checks-wrap" id="newChecksWrap"></div>
+      <div id="newWarningsWrap"></div>
+      <div class="diff-section" id="newPreviewContainer"></div>
+
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="button" class="btn-success" id="btnDownloadNewTrip">✅ 下載新旅程 JSON</button>
+        <button type="button" class="btn-outline" id="btnLoadIntoPatchMode">🔧 載入到「修補模式」繼續微調</button>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   Core Deterministic Patch & New-Trip Engine (v2)
+   - Mode 1: 1:1 port of patch_template.py with 8/8 mandatory checkpoints
+   - Mode 2: Template-driven New Trip Builder with 6/6 mandatory checkpoints
+   ========================================================================= */
+const ItineraryEngine = (() => {
+  const IMG_RE_GLOBAL = /data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+  const LINK_PATTERNS = ["shortcuts://", "maps.app.goo.gl"];
+  const TIME_RE = /^(\d{1,2}):(\d{2})$/;
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const ID_RE = /^[a-z0-9]{8}$/;
+  const FORBIDDEN_EVENT_EDIT_KEYS = new Set(["id", "image", "memo", "dayDate"]);
+  const FORBIDDEN_DAY_EDIT_KEYS = new Set(["id", "date", "events"]);
+  const TOTAL_PATCH_CHECKS = 8;
+  const TOTAL_NEW_CHECKS = 6;
+
+  // --- Pure-JS Synchronous SHA-256 (works offline & on file:// without crypto.subtle) ---
+  function sha256(str) {
+    const bytes = utf8ToBytes(str);
+    const K = [
+      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    ];
+    let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+    let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+
+    const len = bytes.length;
+    const bitLenHi = Math.floor(len / 0x20000000);
+    const bitLenLo = (len << 3) >>> 0;
+    const totalLen = ((len + 9 + 63) >> 6) << 6;
+    const buf = new Uint8Array(totalLen);
+    buf.set(bytes);
+    buf[len] = 0x80;
+    const view = new DataView(buf.buffer);
+    view.setUint32(totalLen - 8, bitLenHi, false);
+    view.setUint32(totalLen - 4, bitLenLo, false);
+
+    const w = new Int32Array(64);
+    for (let offset = 0; offset < totalLen; offset += 64) {
+      for (let i = 0; i < 16; i++) w[i] = view.getInt32(offset + i * 4, false);
+      for (let i = 16; i < 64; i++) {
+        const s0 = (rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3));
+        const s1 = (rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10));
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+      for (let i = 0; i < 64; i++) {
+        const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const temp1 = (h + S1 + ch + K[i] + w[i]) | 0;
+        const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const temp2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + temp1) | 0;
+        d = c; c = b; b = a; a = (temp1 + temp2) | 0;
+      }
+      h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0;
+      h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+    }
+    return [h0, h1, h2, h3, h4, h5, h6, h7]
+      .map(n => (n >>> 0).toString(16).padStart(8, "0"))
+      .join("");
+  }
+
+  function rotr(n, b) { return (n >>> b) | (n << (32 - b)); }
+
+  function utf8ToBytes(str) {
+    if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+    const out = [];
+    for (let i = 0; i < str.length; i++) {
+      let c = str.charCodeAt(i);
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+      else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+        const c2 = str.charCodeAt(++i);
+        const cp = 0x10000 + (((c & 0x3ff) << 10) | (c2 & 0x3ff));
+        out.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3f), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+      } else out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+    }
+    return new Uint8Array(out);
+  }
+
+  // --- Generic Helpers ---
+  function assert(cond, msg) {
+    if (!cond) throw new Error(msg);
+  }
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function jsType(v) {
+    if (v === null) return "null";
+    if (Array.isArray(v)) return "array";
+    return typeof v;
+  }
+
+  function emptyDefaultFor(v) {
+    if (typeof v === "boolean") return false;
+    if (typeof v === "number") return 0;
+    if (typeof v === "string") return "";
+    if (Array.isArray(v)) return [];
+    if (v && typeof v === "object") return {};
+    return null;
+  }
+
+  function deepEqual(a, b) {
+    if (Object.is(a, b)) return true;
+    if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (!deepEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    const ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (const k of ka) {
+      if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+      if (!deepEqual(a[k], b[k])) return false;
+    }
+    return true;
+  }
+
+  function changedKeys(a, b, skipSet = new Set()) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    const diff = new Set();
+    for (const k of keys) {
+      if (skipSet.has(k)) continue;
+      const inA = Object.prototype.hasOwnProperty.call(a, k);
+      const inB = Object.prototype.hasOwnProperty.call(b, k);
+      if (inA !== inB || !deepEqual(a[k], b[k])) diff.add(k);
+    }
+    return diff;
+  }
+
+  function collectStrings(obj, out = []) {
+    if (typeof obj === "string") out.push(obj);
+    else if (Array.isArray(obj)) {
+      for (const item of obj) collectStrings(item, out);
+    } else if (obj && typeof obj === "object") {
+      for (const v of Object.values(obj)) collectStrings(v, out);
+    }
+    return out;
+  }
+
+  function countSubstring(str, sub) {
+    let count = 0, pos = 0;
+    while ((pos = str.indexOf(sub, pos)) !== -1) {
+      count++;
+      pos += sub.length;
+    }
+    return count;
+  }
+
+  function imgCounter(obj) {
+    const counts = new Map();
+    let marker = 0;
+    let total = 0;
+    for (const s of collectStrings(obj)) {
+      marker += countSubstring(s, "data:image/");
+      IMG_RE_GLOBAL.lastIndex = 0;
+      let m;
+      while ((m = IMG_RE_GLOBAL.exec(s)) !== null) {
+        const h = sha256(m[0]);
+        counts.set(h, (counts.get(h) || 0) + 1);
+        total++;
+      }
+    }
+    return { counts, marker, total };
+  }
+
+  function linkCounts(obj) {
+    const all = collectStrings(obj).join("\n");
+    const res = {};
+    for (const p of LINK_PATTERNS) res[p] = countSubstring(all, p);
+    return res;
+  }
+
+  function allEvents(doc) {
+    const out = [];
+    for (const d of doc.days) {
+      for (const e of d.events) out.push(e);
+    }
+    return out;
+  }
+
+  function eventsById(doc) {
+    const map = new Map();
+    for (const d of doc.days) {
+      for (const e of d.events) map.set(e.id, { date: d.date, event: e });
+    }
+    return map;
+  }
+
+  function buildSchema(doc) {
+    const evs = allEvents(doc);
+    const types = new Map();
+    for (const e of evs) {
+      for (const [k, v] of Object.entries(e)) {
+        if (!types.has(k)) types.set(k, new Set());
+        types.get(k).add(jsType(v));
+      }
+    }
+    let baseKeys = new Set();
+    if (evs.length > 0) {
+      baseKeys = new Set(Object.keys(evs[0]));
+      for (let i = 1; i < evs.length; i++) {
+        const cur = new Set(Object.keys(evs[i]));
+        for (const k of [...baseKeys]) {
+          if (!cur.has(k)) baseKeys.delete(k);
+        }
+      }
+    }
+    const validKinds = new Set(evs.map(e => (e.kind !== undefined ? e.kind : "")));
+
+    // Day-level schema
+    const dayTypes = new Map();
+    for (const d of doc.days) {
+      for (const [k, v] of Object.entries(d)) {
+        if (!dayTypes.has(k)) dayTypes.set(k, new Set());
+        dayTypes.get(k).add(jsType(v));
+      }
+    }
+    return { types, baseKeys, validKinds, dayTypes };
+  }
+
+  function genId(usedSet, length = 8) {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    while (true) {
+      let cand = "";
+      for (let i = 0; i < length; i++) {
+        cand += chars[Math.floor(Math.random() * chars.length)];
+      }
+      if (!usedSet.has(cand)) {
+        usedSet.add(cand);
+        return cand;
+      }
+    }
+  }
+
+  function collectUsedIds(doc) {
+    const used = new Set();
+    if (typeof doc.id === "string") used.add(doc.id);
+    for (const d of doc.days || []) {
+      if (d.id) used.add(d.id);
+      for (const e of d.events || []) {
+        if (e.id) used.add(e.id);
+      }
+    }
+    return used;
+  }
+
+  function nextVersionFilename(srcName) {
+    const dotIdx = srcName.lastIndexOf(".");
+    const base = dotIdx > 0 ? srcName.slice(0, dotIdx) : srcName;
+    const ext = dotIdx > 0 ? srcName.slice(dotIdx) : ".json";
+    const m = base.match(/_updated(?:_v(\d+))?$/);
+    if (m) {
+      const nextV = parseInt(m[1] || "1", 10) + 1;
+      return `${base.slice(0, m.index)}_updated_v${nextV}${ext}`;
+    }
+    return `${base}_updated${ext}`;
+  }
+
+  function sanitizeFilename(title) {
+    const clean = (title || "新旅程")
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "_")
+      .replace(/\s+/g, "_");
+    return `${clean || "new_trip"}.json`;
+  }
+
+  function validateTimeStr(timeStr, label = "") {
+    if (timeStr === "") return;
+    assert(typeof timeStr === "string" && TIME_RE.test(timeStr),
+      `${label} 的 time 格式不是 HH:MM：${JSON.stringify(timeStr)}`);
+    const m = timeStr.match(TIME_RE);
+    const hh = parseInt(m[1], 10);
+    const mm = parseInt(m[2], 10);
+    assert(hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59,
+      `${label} 的 time 超出有效時間範圍 (00:00–23:59)：${JSON.stringify(timeStr)}`);
+  }
+
+  function expandDateRange(startStr, endStr) {
+    assert(DATE_RE.test(startStr) && DATE_RE.test(endStr), "起訖日期必須為 YYYY-MM-DD 格式");
+    const [sy, sm, sd] = startStr.split("-").map(Number);
+    const [ey, em, ed] = endStr.split("-").map(Number);
+    const startUtc = Date.UTC(sy, sm - 1, sd);
+    const endUtc = Date.UTC(ey, em - 1, ed);
+    assert(!Number.isNaN(startUtc) && !Number.isNaN(endUtc), "無效的日期值");
+    assert(endUtc >= startUtc, "回程日期不可早於出發日期");
+
+    const days = [];
+    const cur = new Date(startUtc);
+    while (cur.getTime() <= endUtc) {
+      const y = cur.getUTCFullYear();
+      const m = String(cur.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(cur.getUTCDate()).padStart(2, "0");
+      days.push(`${y}-${m}-${d}`);
+      cur.setUTCDate(cur.getUTCDate() + 1);
+      assert(days.length <= 90, "單趟旅程天數上限為 90 天，請確認起訖年份是否輸入錯誤");
+    }
+    return days;
+  }
+
+  function inspectDoc(doc, byteSize = 0) {
+    assert(doc && typeof doc === "object" && !Array.isArray(doc), "JSON 根節點必須是物件");
+    assert(Array.isArray(doc.days), "JSON 缺少 days 陣列");
+    for (let i = 0; i < doc.days.length; i++) {
+      const d = doc.days[i];
+      assert(d && typeof d === "object" && typeof d.date === "string" && Array.isArray(d.events),
+        `第 ${i + 1} 天的格式異常（缺少 date 或 events）`);
+    }
+    const evs = allEvents(doc);
+    const idSet = new Set(evs.map(e => e.id));
+    assert(idSet.size === evs.length, "原檔內存在重複的 event id，請先檢查原檔");
+
+    const img = imgCounter(doc);
+    assert(img.marker === img.total,
+      `原檔本身含非標準 data:image 字串（data:image/ 出現 ${img.marker} 次，標準 Base64 僅 ${img.total} 筆）。已中止以策安全。`);
+
+    const links = linkCounts(doc);
+    const refCards = evs.filter(e => e.time === "").length;
+    const schema = buildSchema(doc);
+
+    return {
+      daysCount: doc.days.length,
+      eventsCount: evs.length,
+      refCards,
+      base64Count: img.total,
+      shortcutsCount: links["shortcuts://"],
+      mapsCount: links["maps.app.goo.gl"],
+      byteSize,
+      validKinds: [...schema.validKinds],
+      schema
+    };
+  }
+
+  function stripHtmlToText(html) {
+    if (typeof html !== "string") return "";
+    return html
+      .replace(IMG_RE_GLOBAL, "[圖片]")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function extractJsonBlock(rawText, label = "JSON") {
+    const trimmed = (rawText || "").trim();
+    assert(trimmed.length > 0, `請先貼上 AI 產出的 ${label}`);
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      assert(parsed && typeof parsed === "object" && !Array.isArray(parsed), `${label} 根節點必須是物件 {}`);
+      return parsed;
+    } catch (_) {}
+
+    const blocks = [];
+    const fenceRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+    let m;
+    while ((m = fenceRe.exec(trimmed)) !== null) {
+      try {
+        const obj = JSON.parse(m[1].trim());
+        if (obj && typeof obj === "object" && !Array.isArray(obj)) blocks.push(obj);
+      } catch (_) {}
+    }
+    if (blocks.length === 1) return blocks[0];
+    if (blocks.length > 1) {
+      throw new Error(`偵測到 ${blocks.length} 個 JSON 程式碼區塊，請只貼上「單一」區塊以避免誤套用。`);
+    }
+    throw new Error("無法解析 JSON 格式，請確認貼上的內容完整且括號、逗號正確。");
+  }
+
+  function reorderByTime(day) {
+    const slots = [];
+    const timed = [];
+    for (let i = 0; i < day.events.length; i++) {
+      const e = day.events[i];
+      if ((e.time || "") !== "") {
+        validateTimeStr(e.time, `${e.id}（${e.title || "未命名"}）`);
+        slots.push(i);
+        timed.push(e);
+      }
+    }
+    timed.sort((a, b) => {
+      const ma = a.time.match(TIME_RE);
+      const mb = b.time.match(TIME_RE);
+      return (parseInt(ma[1], 10) * 60 + parseInt(ma[2], 10)) - (parseInt(mb[1], 10) * 60 + parseInt(mb[2], 10));
+    });
+    for (let k = 0; k < slots.length; k++) {
+      day.events[slots[k]] = timed[k];
+    }
+  }
+
+  function makeEventFromSchema(templateDoc, usedIds, dayDate, kind, fields, memoHtml) {
+    const existing = allEvents(templateDoc);
+    assert(existing.length > 0, "範本檔至少需包含 1 筆活動，才能自動推斷原網站欄位格式");
+    const validKinds = new Set(existing.map(e => (e.kind !== undefined ? e.kind : "")));
+    assert(validKinds.has(kind),
+      `未出現過的 kind 值：${JSON.stringify(kind)}（本檔合法值：${[...validKinds].map(k => JSON.stringify(k)).join("、")}）`);
+
+    const sameKind = existing.filter(e => (e.kind !== undefined ? e.kind : "") === kind);
+    let sample = sameKind[0];
+    for (const cand of sameKind) {
+      const candLen = Object.keys(cand).filter(k => k !== "memo").length;
+      const sampleLen = Object.keys(sample).filter(k => k !== "memo").length;
+      if (candLen > sampleLen) sample = cand;
+    }
+
+    const newEv = {};
+    for (const [k, v] of Object.entries(sample)) {
+      if (k === "memo") continue;
+      newEv[k] = emptyDefaultFor(v);
+    }
+
+    newEv.id = genId(usedIds, 8);
+    newEv.dayDate = dayDate;
+    newEv.kind = kind;
+
+    if (fields && typeof fields === "object") {
+      for (const forbidden of ["id", "dayDate", "image", "memo"]) {
+        assert(!Object.prototype.hasOwnProperty.call(fields, forbidden),
+          `新增活動的 fields 不可直接設定 ${forbidden}（筆記請填 memo_html）`);
+      }
+      Object.assign(newEv, fields);
+    }
+
+    if (typeof memoHtml === "string" && memoHtml.length > 0) {
+      newEv.memo = { title: "筆記", html: memoHtml };
+    }
+    return newEv;
+  }
+
+  // =========================================================================
+  // MODE 1: PATCH EXISTING ITINERARY
+  // =========================================================================
+  function buildLightweightView(doc, { includeMemoText = true } = {}) {
+    const schema = buildSchema(doc);
+    const topMeta = {};
+    for (const [k, v] of Object.entries(doc)) {
+      if (k === "days") continue;
+      if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+        topMeta[k] = v;
+      } else if (Array.isArray(v)) {
+        topMeta[k] = `[陣列: 共 ${v.length} 筆，已省略]`;
+      } else if (v && typeof v === "object") {
+        topMeta[k] = `[物件: keys=${Object.keys(v).join(",")}]`;
+      }
+    }
+
+    const lightDays = doc.days.map((d, idx) => {
+      const dayOut = {
+        dn: `D${idx + 1}`,
+        date: d.date,
+        title: d.title || "",
+      };
+      if (d.note) dayOut.note = d.note;
+      dayOut.events = d.events.map((e, eIdx) => {
+        const evOut = { _idx: eIdx, id: e.id };
+        for (const [k, v] of Object.entries(e)) {
+          if (k === "id" || k === "dayDate") continue;
+          if (k === "image") {
+            if (typeof v === "string" && v.length > 0) evOut.has_image = true;
+            continue;
+          }
+          if (k === "memo") {
+            if (v && typeof v === "object") {
+              const rawHtml = v.html || "";
+              const imgCount = (rawHtml.match(IMG_RE_GLOBAL) || []).length;
+              if (includeMemoText) {
+                const txt = stripHtmlToText(rawHtml);
+                const preview = txt.length > 100 ? txt.slice(0, 100) + "..." : txt;
+                evOut.memo_summary = `${preview}${imgCount ? ` [含${imgCount}張圖]` : ""}`;
+              } else {
+                evOut.has_memo = true;
+              }
+            }
+            continue;
+          }
+          if (typeof v === "string") {
+            if (v === "") continue;
+            evOut[k] = v.includes("data:image/") ? "[含Base64圖片，已省略]" : v;
+          } else if (typeof v === "boolean") {
+            if (v) evOut[k] = true;
+          } else {
+            evOut[k] = v;
+          }
+        }
+        if (e.time === "") evOut.time = "";
+        return evOut;
+      });
+      return dayOut;
+    });
+
+    return {
+      top_fields_summary: topMeta,
+      valid_kinds: [...schema.validKinds],
+      event_fields: [...schema.types.keys()].filter(k => !["id", "dayDate", "image", "memo"].includes(k)),
+      days: lightDays
+    };
+  }
+
+  function buildAiPrompt(doc, opts) {
+    const light = buildLightweightView(doc, opts);
+    const kindsStr = light.valid_kinds.map(k => JSON.stringify(k)).join("、");
+    return [
+      "你是我的旅遊行程 JSON 修改助手。請閱讀下方「輕量版行程」，跟我討論完或確認需求後，**不要輸出完整行程 JSON**，只輸出一段符合下列格式的 **JSON Patch 指令**（用 ```json 程式碼區塊包住），我會貼回本地安全工具自動驗證並合併回完整檔（含所有圖片與筆記）。",
+      "",
+      "【嚴格規則】",
+      "1. 絕對不要猜測 id，必須使用下方行程中精確的 8 碼 `id` 與 `YYYY-MM-DD` 日期。",
+      "2. 禁止在 `modify[].fields` 中修改 `id`、`image`、`memo`、`dayDate`；筆記只能用 `append_memo`（HTML 字串，如 `<p>...</p>`）追加。若原活動沒有筆記，需同時設 `\"create_memo_if_missing\": true` 才會新建。",
+      "3. 跨日搬移請用 `move`（可與同一 `id` 的 `modify` 併用）。",
+      "4. 新增活動請用 `add`：`kind` 只能用本檔合法值：" + kindsStr + "（一般景點填 `\"\"`）；`fields` 只能填既有欄位：" + light.event_fields.join(", ") + "，且字串欄位不可填 `null`。",
+      "5. 除非我明確同意刪除，否則 `delete` 必須為空陣列 `[]`。",
+      "6. 修改時間或新增／搬移活動後，若需依時間重新排列該日活動，請將該日期加入 `reorder_dates`（time 為空的參考卡會自動保留原位）。",
+      "7. 未用到的區塊可省略或留空陣列。",
+      "",
+      "【JSON Patch 格式】",
+      "```json",
+      "{",
+      '  "modify": [{ "id": "...", "fields": { "time": "10:30" }, "append_memo": "<p>...</p>", "create_memo_if_missing": false }],',
+      '  "move": [{ "id": "...", "to_date": "YYYY-MM-DD", "insert_index": null }],',
+      '  "add": [{ "date": "YYYY-MM-DD", "kind": "", "insert_index": null, "fields": { "time": "14:00", "title": "..." }, "memo_html": "" }],',
+      '  "delete": [],',
+      '  "day_modify": [{ "date": "YYYY-MM-DD", "fields": { "title": "...", "note": "..." } }],',
+      '  "reorder_dates": [],',
+      '  "top_modify": {}',
+      "}",
+      "```",
+      "",
+      "【目前輕量版行程資料】",
+      "```json",
+      JSON.stringify(light, null, 2),
+      "```",
+      "",
+      "我接下來想調整的行程內容如下（請先確認並輸出 JSON Patch）："
+    ].join("\n");
+  }
+
+  function applyAndVerify(origDoc, patchRaw) {
+    const patch = typeof patchRaw === "string" ? extractJsonBlock(patchRaw, "JSON 修改指令") : patchRaw;
+    assert(patch && typeof patch === "object" && !Array.isArray(patch), "修補指令必須是物件");
+
+    const allowedPatchKeys = new Set(["modify", "move", "add", "delete", "day_modify", "reorder_dates", "top_modify"]);
+    for (const k of Object.keys(patch)) {
+      assert(allowedPatchKeys.has(k), `修補指令包含不支援的頂層鍵："${k}"`);
+    }
+
+    const modifyList = patch.modify || [];
+    const moveList = patch.move || [];
+    const addList = patch.add || [];
+    const deleteList = patch.delete || [];
+    const dayModifyList = patch.day_modify || [];
+    const reorderDatesList = patch.reorder_dates || [];
+    const topModify = patch.top_modify || {};
+
+    assert(Array.isArray(modifyList), "modify 必須是陣列");
+    assert(Array.isArray(moveList), "move 必須是陣列");
+    assert(Array.isArray(addList), "add 必須是陣列");
+    assert(Array.isArray(deleteList), "delete 必須是陣列");
+    assert(Array.isArray(dayModifyList), "day_modify 必須是陣列");
+    assert(Array.isArray(reorderDatesList), "reorder_dates 必須是陣列");
+    assert(topModify && typeof topModify === "object" && !Array.isArray(topModify), "top_modify 必須是物件");
+
+    const origEventsMap = eventsById(origDoc);
+    const origDates = new Set(origDoc.days.map(d => d.date));
+    const dnByDate = new Map(origDoc.days.map((d, i) => [d.date, `D${i + 1}`]));
+    const { types: EV_SCHEMA, baseKeys: BASE_KEYS, validKinds: VALID_KINDS } = buildSchema(origDoc);
+
+    const TOUCHED_DATES = new Set();
+    const MODIFY = new Map();
+    const DAY_MODIFY = new Map();
+    const ADD = new Set();
+    const DELETE = new Set();
+    const MOVE = new Set();
+    const ALLOWED_TOP_KEYS = new Set();
+    const ALLOW_REORDER_DATES = new Set();
+
+    for (const eid of deleteList) {
+      assert(typeof eid === "string" && origEventsMap.has(eid), `delete 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(!DELETE.has(eid), `delete 出現重複 id：${eid}`);
+      DELETE.add(eid);
+      TOUCHED_DATES.add(origEventsMap.get(eid).date);
+    }
+
+    const data = deepClone(origDoc);
+    const usedIds = collectUsedIds(data);
+    const dayOf = (date) => {
+      const m = data.days.filter(d => d.date === date);
+      assert(m.length === 1, `日期 ${JSON.stringify(date)} 匹配 ${m.length} 筆（必須唯一）`);
+      return m[0];
+    };
+    const evInDay = (day, id) => {
+      const m = day.events.filter(e => e.id === id);
+      assert(m.length === 1, `活動 ${id} 在 ${day.date} 匹配 ${m.length} 筆（必須唯一）`);
+      return m[0];
+    };
+
+    const diff = {
+      topModify: [],
+      dayModify: [],
+      modify: [],
+      move: [],
+      add: [],
+      delete: [],
+      reorder: []
+    };
+
+    // 1. top_modify
+    for (const [k, v] of Object.entries(topModify)) {
+      assert(k !== "days", "禁止透過 top_modify 修改 days");
+      assert(Object.prototype.hasOwnProperty.call(origDoc, k), `top_modify 包含原檔不存在的頂層欄位：${k}`);
+      ALLOWED_TOP_KEYS.add(k);
+      diff.topModify.push({ key: k, oldVal: origDoc[k], newVal: v });
+      data[k] = v;
+    }
+
+    // 2. day_modify
+    for (const item of dayModifyList) {
+      assert(item && typeof item === "object" && typeof item.date === "string", "day_modify 項目缺少 date");
+      assert(origDates.has(item.date), `day_modify 含不存在的日期：${item.date}`);
+      assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+        `day_modify(${item.date}) 缺少 fields 物件`);
+      const day = dayOf(item.date);
+      const changes = [];
+      for (const [k, v] of Object.entries(item.fields)) {
+        assert(!FORBIDDEN_DAY_EDIT_KEYS.has(k), `禁止修改日的受保護欄位：${k}`);
+        if (!DAY_MODIFY.has(item.date)) DAY_MODIFY.set(item.date, new Set());
+        DAY_MODIFY.get(item.date).add(k);
+        changes.push({ key: k, oldVal: day[k], newVal: v });
+        day[k] = v;
+      }
+      if (changes.length > 0) {
+        TOUCHED_DATES.add(item.date);
+        diff.dayModify.push({ date: item.date, dn: dnByDate.get(item.date), changes });
+      }
+    }
+
+    // 3. modify
+    const seenModify = new Set();
+    for (const item of modifyList) {
+      assert(item && typeof item === "object" && typeof item.id === "string", "modify 項目缺少 id");
+      const eid = item.id;
+      assert(origEventsMap.has(eid), `modify 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(!DELETE.has(eid), `活動 ${eid} 同時出現在 modify 與 delete，請確認意圖`);
+      assert(!seenModify.has(eid), `modify 出現重複 id：${eid}`);
+      seenModify.add(eid);
+
+      const origInfo = origEventsMap.get(eid);
+      const day = dayOf(origInfo.date);
+      const ev = evInDay(day, eid);
+      const allowedSet = new Set();
+      const fieldChanges = [];
+
+      if (item.fields !== undefined) {
+        assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+          `modify(${eid}) 的 fields 必須是物件`);
+        for (const [k, v] of Object.entries(item.fields)) {
+          assert(!FORBIDDEN_EVENT_EDIT_KEYS.has(k),
+            `禁止在 modify(${eid}) 中直接修改 ${k}（筆記請用 append_memo，跨日請用 move）`);
+          assert(EV_SCHEMA.has(k), `modify(${eid}) 出現原檔從未有過的欄位：${k}`);
+          const vt = jsType(v);
+          assert(EV_SCHEMA.get(k).has(vt),
+            `modify(${eid}) 欄位 "${k}" 型別 ${vt} 不符原檔（允許：${[...EV_SCHEMA.get(k)].join("/")}）`);
+          if (k === "kind") {
+            assert(VALID_KINDS.has(v),
+              `modify(${eid}) 的 kind 值 ${JSON.stringify(v)} 不合法（允許：${[...VALID_KINDS].map(x => JSON.stringify(x)).join("、")}）`);
+          }
+          allowedSet.add(k);
+          if (!deepEqual(ev[k], v)) fieldChanges.push({ key: k, oldVal: ev[k], newVal: v });
+          ev[k] = v;
+        }
+      }
+
+      let memoAppended = null;
+      if (typeof item.append_memo === "string" && item.append_memo.length > 0) {
+        allowedSet.add("memo");
+        if (!ev.memo) {
+          assert(item.create_memo_if_missing === true,
+            `活動 ${eid}（${ev.title || ""}）原本沒有筆記，需明確設定 "create_memo_if_missing": true 才可新建`);
+          ev.memo = { title: "筆記", html: item.append_memo };
+          memoAppended = { created: true, html: item.append_memo };
+        } else {
+          ev.memo.html = (ev.memo.html || "") + item.append_memo;
+          memoAppended = { created: false, html: item.append_memo };
+        }
+      }
+
+      if (allowedSet.size > 0) {
+        MODIFY.set(eid, allowedSet);
+        TOUCHED_DATES.add(origInfo.date);
+        diff.modify.push({
+          id: eid,
+          date: origInfo.date,
+          dn: dnByDate.get(origInfo.date),
+          title: origInfo.event.title || "(無標題)",
+          fieldChanges,
+          memoAppended
+        });
+      }
+    }
+
+    // 4. move
+    const seenMove = new Set();
+    for (const item of moveList) {
+      assert(item && typeof item === "object" && typeof item.id === "string" && typeof item.to_date === "string",
+        "move 項目必須包含 id 與 to_date");
+      const eid = item.id;
+      assert(origEventsMap.has(eid), `move 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(origDates.has(item.to_date), `move 的目標日期不存在：${item.to_date}`);
+      assert(!DELETE.has(eid), `活動 ${eid} 同時出現在 move 與 delete，請確認意圖`);
+      assert(!seenMove.has(eid), `move 出現重複 id：${eid}`);
+      seenMove.add(eid);
+
+      const srcDate = origEventsMap.get(eid).date;
+      assert(srcDate !== item.to_date, `move(${eid}) 來源日與目標日皆為 ${srcDate}（同日調順序請用 reorder_dates）`);
+
+      const srcDay = dayOf(srcDate);
+      const dstDay = dayOf(item.to_date);
+      const idx = srcDay.events.findIndex(e => e.id === eid);
+      assert(idx !== -1, `無法在 ${srcDate} 找到活動 ${eid}`);
+      const [ev] = srcDay.events.splice(idx, 1);
+      ev.dayDate = dstDay.date;
+
+      if (item.insert_index === null || item.insert_index === undefined) {
+        dstDay.events.push(ev);
+      } else {
+        assert(Number.isInteger(item.insert_index) && item.insert_index >= 0 && item.insert_index <= dstDay.events.length,
+          `move(${eid}) 的 insert_index 超出範圍：${item.insert_index}`);
+        dstDay.events.splice(item.insert_index, 0, ev);
+      }
+
+      MOVE.add(eid);
+      TOUCHED_DATES.add(srcDate);
+      TOUCHED_DATES.add(item.to_date);
+      diff.move.push({
+        id: eid,
+        title: ev.title || "(無標題)",
+        fromDate: srcDate,
+        fromDn: dnByDate.get(srcDate),
+        toDate: item.to_date,
+        toDn: dnByDate.get(item.to_date),
+        hasImage: Boolean(ev.image),
+        hasMemo: Boolean(ev.memo)
+      });
+    }
+
+    // 5. delete
+    for (const eid of DELETE) {
+      const origInfo = origEventsMap.get(eid);
+      const day = dayOf(origInfo.date);
+      const idx = day.events.findIndex(e => e.id === eid);
+      assert(idx !== -1, `無法刪除不存在於 ${origInfo.date} 的活動 ${eid}`);
+      const [removed] = day.events.splice(idx, 1);
+      const removedImgs = imgCounter(removed).total;
+      diff.delete.push({
+        id: eid,
+        date: origInfo.date,
+        dn: dnByDate.get(origInfo.date),
+        title: removed.title || "(無標題)",
+        time: removed.time || "",
+        hasMemo: Boolean(removed.memo),
+        imgCount: removedImgs
+      });
+    }
+
+    // 6. add
+    for (const item of addList) {
+      assert(item && typeof item === "object" && typeof item.date === "string", "add 項目缺少 date");
+      assert(origDates.has(item.date), `add 含不存在的日期：${item.date}`);
+      const kind = item.kind !== undefined ? item.kind : "";
+      const newEv = makeEventFromSchema(origDoc, usedIds, item.date, kind, item.fields || {}, item.memo_html || "");
+      const day = dayOf(item.date);
+
+      if (item.insert_index === null || item.insert_index === undefined) {
+        day.events.push(newEv);
+      } else {
+        assert(Number.isInteger(item.insert_index) && item.insert_index >= 0 && item.insert_index <= day.events.length,
+          `add(${item.date}) 的 insert_index 超出範圍：${item.insert_index}`);
+        day.events.splice(item.insert_index, 0, newEv);
+      }
+
+      ADD.add(newEv.id);
+      TOUCHED_DATES.add(item.date);
+      diff.add.push({
+        id: newEv.id,
+        date: item.date,
+        dn: dnByDate.get(item.date),
+        kind,
+        time: newEv.time || "",
+        title: newEv.title || "(無標題)",
+        hasMemo: Boolean(newEv.memo),
+        fields: item.fields || {}
+      });
+    }
+
+    // 7. reorder_dates
+    for (const date of reorderDatesList) {
+      assert(typeof date === "string" && origDates.has(date), `reorder_dates 含不存在的日期：${JSON.stringify(date)}`);
+      const day = dayOf(date);
+      const beforeOrder = day.events.map(e => `${e.time || "(參考卡)"} ${e.title || e.id}`);
+      reorderByTime(day);
+      const afterOrder = day.events.map(e => `${e.time || "(參考卡)"} ${e.title || e.id}`);
+      ALLOW_REORDER_DATES.add(date);
+      TOUCHED_DATES.add(date);
+      diff.reorder.push({
+        date,
+        dn: dnByDate.get(date),
+        changed: !deepEqual(beforeOrder, afterOrder),
+        beforeOrder,
+        afterOrder
+      });
+    }
+
+    const totalChangeGroups =
+      diff.topModify.length + diff.dayModify.length + diff.modify.length +
+      diff.move.length + diff.add.length + diff.delete.length + diff.reorder.length;
+    assert(totalChangeGroups > 0, "此修補指令未包含任何實際變動（全部清單皆為空）。");
+
+    // Serialize & re-parse
+    const serialized = JSON.stringify(data, null, 2);
+    const newDoc = JSON.parse(serialized);
+
+    // ===== 8/8 Strict Automated Verification =====
+    const checkpoints = [];
+    const checkpoint = (name) => checkpoints.push(name);
+    const oEv = eventsById(origDoc);
+    const nEv = eventsById(newDoc);
+
+    // (1/8) 異動清單
+    for (const d of TOUCHED_DATES) assert(origDates.has(d), `TOUCHED_DATES 含不存在的日期：${d}`);
+    for (const d of ALLOW_REORDER_DATES) assert(TOUCHED_DATES.has(d), "ALLOW_REORDER_DATES 必須是 TOUCHED_DATES 的子集");
+    for (const eid of MODIFY.keys()) assert(oEv.has(eid), `MODIFY 含不存在的 event id：${eid}`);
+    for (const eid of MOVE) assert(oEv.has(eid), `MOVE 含不存在的 event id：${eid}`);
+    for (const eid of DELETE) assert(oEv.has(eid), `DELETE 含不存在的 event id：${eid}`);
+    for (const d of DAY_MODIFY.keys()) assert(TOUCHED_DATES.has(d), `DAY_MODIFY 日期未列入 TOUCHED_DATES：${d}`);
+    checkpoint("異動清單");
+
+    // (2/8) 頂層鍵
+    assert(deepEqual(Object.keys(origDoc), Object.keys(newDoc)), "頂層 key 順序或集合改變");
+    for (const k of Object.keys(origDoc)) {
+      if (k !== "days" && !ALLOWED_TOP_KEYS.has(k)) {
+        assert(deepEqual(origDoc[k], newDoc[k]), `未授權頂層欄位被改：${k}`);
+      }
+    }
+    checkpoint("頂層鍵");
+
+    // (3/8) days
+    assert(deepEqual(origDoc.days.map(d => d.id), newDoc.days.map(d => d.id)), "days id 或順序改變");
+    assert(deepEqual(origDoc.days.map(d => d.date), newDoc.days.map(d => d.date)), "days date 或順序改變");
+    for (let i = 0; i < origDoc.days.length; i++) {
+      const od = origDoc.days[i], nd = newDoc.days[i];
+      if (!TOUCHED_DATES.has(od.date)) {
+        assert(deepEqual(od, nd), `未點名日期被改：${od.date}`);
+      } else {
+        const allowedDay = DAY_MODIFY.get(od.date) || new Set();
+        const bad = [...changedKeys(od, nd, new Set(["events"]))].filter(k => !allowedDay.has(k));
+        assert(bad.length === 0, `${od.date} 的日欄位被未授權修改：${bad.join(", ")}`);
+      }
+    }
+    checkpoint("days");
+
+    // (4/8) event diff
+    const removedIds = new Set([...oEv.keys()].filter(id => !nEv.has(id)));
+    const addedIds = new Set([...nEv.keys()].filter(id => !oEv.has(id)));
+    assert(removedIds.size === DELETE.size && [...removedIds].every(id => DELETE.has(id)), "刪除集合不符");
+    assert(addedIds.size === ADD.size && [...addedIds].every(id => ADD.has(id)), "新增集合不符");
+
+    for (const eid of oEv.keys()) {
+      if (!nEv.has(eid)) continue;
+      const { date: od, event: oe } = oEv.get(eid);
+      const { date: nd, event: ne } = nEv.get(eid);
+      assert((od !== nd) === MOVE.has(eid), `${eid} 跨日搬移狀態不符：${od} -> ${nd}`);
+
+      const allowed = new Set(MODIFY.get(eid) || []);
+      if (MOVE.has(eid)) allowed.add("dayDate");
+      const bad = [...changedKeys(oe, ne)].filter(k => !allowed.has(k));
+      assert(bad.length === 0, `${eid} 改了未授權欄位：${bad.join(", ")}`);
+
+      const hadMemo = Object.prototype.hasOwnProperty.call(oe, "memo") && oe.memo !== null;
+      const hasMemo = Object.prototype.hasOwnProperty.call(ne, "memo") && ne.memo !== null;
+      assert(!(hadMemo && !hasMemo), `${eid} 原有 memo 被移除`);
+      if (hadMemo && hasMemo) {
+        assert(ne.memo.title === oe.memo.title, `${eid} memo 標題被改`);
+        assert((ne.memo.html || "").startsWith(oe.memo.html || ""), `${eid} 原有 memo 被覆蓋`);
+      }
+    }
+    checkpoint("event diff");
+
+    // (5/8) 新增活動 schema
+    for (const eid of ADD) {
+      const { event: ne } = nEv.get(eid);
+      assert(ID_RE.test(eid), `新 id 格式不符：${eid}`);
+      const missing = [...BASE_KEYS].filter(k => !Object.prototype.hasOwnProperty.call(ne, k));
+      assert(missing.length === 0, `新活動 ${eid} 缺少必備欄位：${missing.join(", ")}`);
+      for (const [k, v] of Object.entries(ne)) {
+        if (k === "memo") {
+          assert(v && typeof v === "object" && typeof v.title === "string" && typeof v.html === "string",
+            `新活動 ${eid} 的 memo 格式異常`);
+          continue;
+        }
+        assert(EV_SCHEMA.has(k), `新活動 ${eid} 出現原檔從未有過的欄位：${k}`);
+        const t = jsType(v);
+        assert(EV_SCHEMA.get(k).has(t),
+          `新活動 ${eid} 欄位 "${k}" 型別 ${t} 不符原檔（允許：${[...EV_SCHEMA.get(k)].join("/")}）`);
+      }
+    }
+    checkpoint("新增活動");
+
+    // (6/8) 每日順序（T22：只鎖定新舊皆 time 為空的參考卡）
+    for (let i = 0; i < origDoc.days.length; i++) {
+      const od = origDoc.days[i], nd = newDoc.days[i];
+      const date = od.date;
+      const seqOld = od.events.filter(e => nEv.has(e.id) && nEv.get(e.id).date === date).map(e => e.id);
+      const seqNew = nd.events.filter(e => oEv.has(e.id) && oEv.get(e.id).date === date).map(e => e.id);
+      if (ALLOW_REORDER_DATES.has(date)) {
+        const isPureRef = (id) => (oEv.get(id).event.time === "" && nEv.get(id).event.time === "");
+        assert(deepEqual(seqOld.filter(isPureRef), seqNew.filter(isPureRef)),
+          `${date} 參考卡(time空)的相對順序被改變`);
+      } else {
+        assert(deepEqual(seqOld, seqNew),
+          `${date} 既有活動的相對順序被改變；若需依時間重排請列入 reorder_dates`);
+      }
+    }
+    checkpoint("每日順序");
+
+    // (7/8) dayDate/id
+    const allNewIds = [];
+    for (const day of newDoc.days) {
+      for (const e of day.events) {
+        assert(e.dayDate === day.date, `存在 event(${e.id}).dayDate 與所屬 day.date(${day.date}) 不一致`);
+        allNewIds.push(e.id);
+      }
+    }
+    assert(allNewIds.length === new Set(allNewIds).size, "出現重複的 event id");
+    checkpoint("dayDate/id");
+
+    // (8/8) Base64/連結
+    const oc = imgCounter(origDoc);
+    const nc = imgCounter(newDoc);
+    const deletedEvents = [...DELETE].map(eid => oEv.get(eid).event);
+    const dc = imgCounter(deletedEvents);
+
+    for (const [hash, origCount] of oc.counts.entries()) {
+      const newCount = nc.counts.get(hash) || 0;
+      const delCount = dc.counts.get(hash) || 0;
+      assert(newCount >= origCount - delCount, "Base64 圖片遺失或遭未授權修改");
+    }
+    assert(oc.marker === oc.total && nc.marker === nc.total, "存在非標準 data:image 字串");
+
+    const ol = linkCounts(origDoc);
+    const nl = linkCounts(newDoc);
+    const dl = linkCounts(deletedEvents);
+    for (const pat of LINK_PATTERNS) {
+      assert(nl[pat] >= ol[pat] - dl[pat], `${pat} 連結數量異常減少：${ol[pat]} → ${nl[pat]}`);
+    }
+    checkpoint("Base64/連結");
+
+    assert(checkpoints.length === TOTAL_PATCH_CHECKS,
+      `驗收段落未全部執行：${checkpoints.length}/${TOTAL_PATCH_CHECKS}`);
+
+    const untouchedDays = origDoc.days.length - TOUCHED_DATES.size;
+    const refOld = [...oEv.values()].filter(x => x.event.time === "").length;
+    const refNew = [...nEv.values()].filter(x => x.event.time === "").length;
+
+    return {
+      newDoc,
+      serialized,
+      diff,
+      checkpoints,
+      totalChecks: TOTAL_PATCH_CHECKS,
+      stats: {
+        untouchedDays,
+        eventsBefore: oEv.size,
+        eventsAfter: nEv.size,
+        refBefore: refOld,
+        refAfter: refNew,
+        base64Before: oc.total,
+        base64After: nc.total,
+        shortcutsBefore: ol["shortcuts://"],
+        shortcutsAfter: nl["shortcuts://"],
+        mapsBefore: ol["maps.app.goo.gl"],
+        mapsAfter: nl["maps.app.goo.gl"]
+      }
+    };
+  }
+
+  // =========================================================================
+  // MODE 2: CREATE NEW TRIP FROM EXISTING TEMPLATE JSON (6/6 VERIFICATION)
+  // =========================================================================
+  const AUTO_META_TOP_KEYS = new Set(["id", "title", "name", "start", "startDate", "end", "endDate", "days", "createdAt", "updatedAt"]);
+
+  function inspectTemplate(doc, byteSize = 0) {
+    const base = inspectDoc(doc, byteSize);
+    assert(doc.days.length > 0, "範本檔至少需有 1 天（days 不可為空），才能推斷日期欄位結構");
+    assert(base.eventsCount > 0, "範本檔至少需有 1 筆活動，才能推斷活動欄位結構與合法 kind");
+
+    const topKeys = Object.keys(doc);
+    const extraTopFields = [];
+    for (const k of topKeys) {
+      if (AUTO_META_TOP_KEYS.has(k)) continue;
+      const v = doc[k];
+      const t = jsType(v);
+      const imgs = imgCounter(v).total;
+      let summary = "";
+      if (t === "array") summary = `陣列（原 ${v.length} 筆）`;
+      else if (t === "object") summary = `物件（${Object.keys(v).length} 鍵）`;
+      else if (t === "string") summary = v.length > 30 ? `字串（${v.length} 字）` : `字串：${JSON.stringify(v)}`;
+      else summary = `${t}：${JSON.stringify(v)}`;
+
+      // Safe default: clear arrays, objects, or anything with Base64 images; keep small primitive settings (e.g. currency/theme)
+      const defaultKeep = (t === "number" || t === "boolean" || (t === "string" && imgs === 0 && v.length <= 24));
+      extraTopFields.push({
+        key: k,
+        type: t,
+        imgCount: imgs,
+        summary,
+        defaultKeep
+      });
+    }
+
+    const dayEditableFields = [...base.schema.dayTypes.keys()].filter(k => !FORBIDDEN_DAY_EDIT_KEYS.has(k));
+    const eventEditableFields = [...base.schema.types.keys()].filter(k => !FORBIDDEN_EVENT_EDIT_KEYS.has(k));
+
+    return {
+      ...base,
+      topKeys,
+      extraTopFields,
+      dayEditableFields,
+      eventEditableFields
+    };
+  }
+
+  function buildNewTripPrompt(templateDoc, { title, startDate, endDate }) {
+    const info = inspectTemplate(templateDoc);
+    const dates = expandDateRange(startDate, endDate);
+    const kindsStr = info.validKinds.map(k => JSON.stringify(k)).join("、");
+    const dateListLines = dates.map((d, idx) => `- D${idx + 1}：${d}`).join("\n");
+
+    return [
+      "你是我的旅遊行程規劃與 JSON 建檔助手。接下來我會提供我的新旅程想法、機票／住宿資訊或景點清單；請幫我整理行程，並在我們確認定案後，輸出符合下列格式的 **新旅程 JSON**（用單一 ```json 程式碼區塊包住），我會貼回本地安全工具自動生成 ID、補齊原網站必備欄位並跑 6/6 驗收。",
+      "",
+      `【新旅程資訊】`,
+      `- 旅程名稱：${title || "新旅程"}`,
+      `- 日期範圍：${startDate} ～ ${endDate}（共 ${dates.length} 天）`,
+      dateListLines,
+      "",
+      "【嚴格格式規則（依我的原網站範本自動推斷）】",
+      `1. 頂層只要包含 \`"days"\` 陣列，每筆 \`date\` 必須精確落在上述 ${dates.length} 個日期內（YYYY-MM-DD），不可重複。`,
+      `2. 每個活動的 \`kind\` 只能使用本網站合法值：${kindsStr}（一般景點／交通／住宿填 \`""\`）。`,
+      `3. 活動的 \`fields\` 只能填以下既有欄位：${info.eventEditableFields.join(", ")}。`,
+      "   - 禁止填入 `id`、`dayDate`、`image`、`memo`（系統會自動產生 8 碼 `id` 與 `dayDate`）。",
+      "   - 字串欄位不可填 `null`；布林欄位（如 `must`）請填 `true` / `false`。",
+      "   - `time` 請填 24 小時制 `HH:MM`（例如 `\"09:30\"`），若是備選清單／參考卡片請填 `\"\"`。",
+      "4. 若該活動需要筆記，請放在活動同層的 `memo_html`（HTML 字串，如 `\"<p>...</p>\"`）；無筆記請省略或填 `\"\"`。",
+      `5. 每日可填的日欄位為：${info.dayEditableFields.join(", ")}。`,
+      "",
+      "【輸出 JSON 格式範例】",
+      "```json",
+      "{",
+      '  "days": [',
+      "    {",
+      `      "date": "${dates[0]}",`,
+      '      "title": "D1 日標題",',
+      '      "note": "",',
+      '      "events": [',
+      "        {",
+      '          "kind": "",',
+      '          "fields": { "time": "10:00", "title": "景點名稱" },',
+      '          "memo_html": "<p>交通與注意事項</p>"',
+      "        }",
+      "      ]",
+      "    }",
+      "  ]",
+      "}",
+      "```",
+      "",
+      "以下是我這次新旅程的想法與需求（請先幫我規劃／整理，確認後再輸出上述 JSON）："
+    ].join("\n");
+  }
+
+  function buildDaySkeleton(templateDoc, usedIds, dateStr) {
+    const sampleDay = templateDoc.days[0];
+    const dayObj = {};
+    for (const [k, v] of Object.entries(sampleDay)) {
+      if (k === "id") dayObj[k] = genId(usedIds, 8);
+      else if (k === "date") dayObj[k] = dateStr;
+      else if (k === "events") dayObj[k] = [];
+      else dayObj[k] = emptyDefaultFor(v);
+    }
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "id")) dayObj.id = genId(usedIds, 8);
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "date")) dayObj.date = dateStr;
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "events")) dayObj.events = [];
+    return dayObj;
+  }
+
+  function buildNewTripAndVerify(templateDoc, config, inputRaw) {
+    const { title, startDate, endDate, keepTopKeys = new Set(), autoSort = true, emptyShell = false } = config;
+    const info = inspectTemplate(templateDoc);
+    const { types: EV_SCHEMA, baseKeys: BASE_KEYS, validKinds: VALID_KINDS, dayTypes: DAY_SCHEMA } = info.schema;
+
+    const cleanTitle = (title || "").trim();
+    assert(cleanTitle.length > 0, "請先填寫「新旅程名稱」");
+    const targetDates = expandDateRange(startDate, endDate);
+    const targetDateSet = new Set(targetDates);
+
+    let payload = { days: [] };
+    if (!emptyShell) {
+      payload = typeof inputRaw === "string" ? extractJsonBlock(inputRaw, "新行程 JSON") : inputRaw;
+      assert(payload && typeof payload === "object" && !Array.isArray(payload), "新行程 JSON 根節點必須是物件");
+      assert(Array.isArray(payload.days), "新行程 JSON 缺少 days 陣列");
+    }
+
+    // Seed usedIds with template's old IDs so zero old IDs can ever be reused
+    const oldIds = collectUsedIds(templateDoc);
+    const usedIds = new Set(oldIds);
+
+    // 1. Construct top-level object preserving exact key order from templateDoc
+    const outDoc = {};
+    let expectedKeptImages = 0;
+    const nowIso = new Date().toISOString();
+    const nowTs = Date.now();
+
+    for (const [k, v] of Object.entries(templateDoc)) {
+      if (k === "days") {
+        outDoc.days = [];
+      } else if (k === "id" && typeof v === "string") {
+        outDoc[k] = genId(usedIds, 8);
+      } else if ((k === "title" || k === "name") && typeof v === "string") {
+        outDoc[k] = cleanTitle;
+      } else if ((k === "start" || k === "startDate") && typeof v === "string") {
+        outDoc[k] = startDate;
+      } else if ((k === "end" || k === "endDate") && typeof v === "string") {
+        outDoc[k] = endDate;
+      } else if (k === "createdAt" || k === "updatedAt") {
+        if (typeof v === "string") outDoc[k] = nowIso;
+        else if (typeof v === "number") outDoc[k] = nowTs;
+        else outDoc[k] = emptyDefaultFor(v);
+      } else if (keepTopKeys.has(k)) {
+        outDoc[k] = deepClone(v);
+        expectedKeptImages += imgCounter(v).total;
+      } else {
+        outDoc[k] = emptyDefaultFor(v);
+      }
+    }
+
+    // 2. Map AI payload days by date (strict validation)
+    const inputByDate = new Map();
+    for (let i = 0; i < payload.days.length; i++) {
+      const d = payload.days[i];
+      assert(d && typeof d === "object" && typeof d.date === "string", `第 ${i + 1} 筆 day 缺少 date 字串`);
+      assert(targetDateSet.has(d.date),
+        `AI 輸出的日期 ${d.date} 不在設定的範圍（${startDate} ～ ${endDate}）內，請確認日期是否打錯`);
+      assert(!inputByDate.has(d.date), `AI 輸出包含重複日期：${d.date}`);
+      inputByDate.set(d.date, d);
+    }
+
+    const warnings = [];
+    if (!emptyShell) {
+      const missingDates = targetDates.filter(dt => !inputByDate.has(dt));
+      if (missingDates.length > 0) {
+        warnings.push(`以下日期 AI 未提供內容，已自動建立為空白日：${missingDates.join("、")}`);
+      }
+    }
+
+    // 3. Build each day & event strictly against template schema
+    for (const dt of targetDates) {
+      const dayObj = buildDaySkeleton(templateDoc, usedIds, dt);
+      const srcDay = inputByDate.get(dt);
+
+      if (srcDay) {
+        for (const [k, v] of Object.entries(srcDay)) {
+          if (k === "date" || k === "events" || k === "dn") continue;
+          assert(!FORBIDDEN_DAY_EDIT_KEYS.has(k), `日期 ${dt} 禁止直接設定 ${k}`);
+          assert(DAY_SCHEMA.has(k), `日期 ${dt} 出現原網站範本沒有的日欄位：${k}`);
+          const vt = jsType(v);
+          assert(DAY_SCHEMA.get(k).has(vt),
+            `日期 ${dt} 的日欄位 "${k}" 型別 ${vt} 不符範本（允許：${[...DAY_SCHEMA.get(k)].join("/")}）`);
+          dayObj[k] = v;
+        }
+
+        const srcEvents = srcDay.events || [];
+        assert(Array.isArray(srcEvents), `日期 ${dt} 的 events 必須是陣列`);
+        for (let idx = 0; idx < srcEvents.length; idx++) {
+          const item = srcEvents[idx];
+          assert(item && typeof item === "object" && !Array.isArray(item),
+            `日期 ${dt} 第 ${idx + 1} 筆活動格式錯誤`);
+
+          let kind = "";
+          let fields = {};
+          let memoHtml = "";
+
+          if (Object.prototype.hasOwnProperty.call(item, "fields")) {
+            assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+              `日期 ${dt} 第 ${idx + 1} 筆活動的 fields 必須是物件`);
+            fields = { ...item.fields };
+            kind = item.kind !== undefined ? item.kind : (fields.kind !== undefined ? fields.kind : "");
+            memoHtml = typeof item.memo_html === "string" ? item.memo_html : "";
+          } else {
+            // Also safely accept flat event objects, still strictly rejecting forbidden/unknown keys
+            for (const [fk, fv] of Object.entries(item)) {
+              if (fk === "memo_html") {
+                memoHtml = typeof fv === "string" ? fv : "";
+              } else if (fk === "kind") {
+                kind = fv;
+              } else {
+                fields[fk] = fv;
+              }
+            }
+          }
+
+          if (Object.prototype.hasOwnProperty.call(fields, "time")) {
+            validateTimeStr(fields.time, `日期 ${dt} 第 ${idx + 1} 筆（${fields.title || "未命名"}）`);
+          }
+
+          const newEv = makeEventFromSchema(templateDoc, usedIds, dt, kind, fields, memoHtml);
+          dayObj.events.push(newEv);
+        }
+
+        if (autoSort && dayObj.events.length > 1) {
+          reorderByTime(dayObj);
+        }
+      }
+
+      outDoc.days.push(dayObj);
+    }
+
+    // Serialize & re-parse
+    const serialized = JSON.stringify(outDoc, null, 2);
+    const newDoc = JSON.parse(serialized);
+
+    // ===== 6/6 Strict Automated Verification for New Trip =====
+    const checkpoints = [];
+    const checkpoint = (name) => checkpoints.push(name);
+
+    // (1/6) 頂層鍵順序與範本 100% 一致
+    assert(deepEqual(Object.keys(templateDoc), Object.keys(newDoc)), "新檔頂層 key 集合或順序與範本不符");
+    checkpoint("頂層鍵結構");
+
+    // (2/6) 天數、起訖日期連續性與日 id 唯一性
+    assert(deepEqual(newDoc.days.map(d => d.date), targetDates), "新檔日期序列與設定不符");
+    const dayIds = newDoc.days.map(d => d.id);
+    assert(dayIds.length === new Set(dayIds).size, "新檔存在重複的 day id");
+    checkpoint("天數與日期");
+
+    // (3/6) 零舊資料殘留（無舊 id 碰撞、無未授權 Base64 圖片殘留）
+    const newAllIds = new Set(dayIds);
+    for (const d of newDoc.days) {
+      for (const e of d.events) newAllIds.add(e.id);
+    }
+    if (typeof newDoc.id === "string") newAllIds.add(newDoc.id);
+    for (const nid of newAllIds) {
+      assert(!oldIds.has(nid), `偵測到與範本重複的舊 id：${nid}`);
+    }
+    const newImgs = imgCounter(newDoc);
+    assert(newImgs.marker === newImgs.total, "存在非標準 data:image 字串");
+    assert(newImgs.total === expectedKeptImages,
+      `Base64 圖片數異常（預期 ${expectedKeptImages}，實際 ${newImgs.total}）`);
+    checkpoint("零舊資料殘留");
+
+    // (4/6) 活動 Schema、型別與合法 kind
+    let totalEvents = 0;
+    let refCards = 0;
+    let memoCount = 0;
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        totalEvents++;
+        if (ev.time === "") refCards++;
+        if (ev.memo) {
+          memoCount++;
+          assert(typeof ev.memo === "object" && typeof ev.memo.title === "string" && typeof ev.memo.html === "string",
+            `活動 ${ev.id} 的 memo 格式異常`);
+        }
+        assert(ID_RE.test(ev.id), `新活動 id 格式不符：${ev.id}`);
+        assert(VALID_KINDS.has(ev.kind !== undefined ? ev.kind : ""),
+          `活動 ${ev.id} 的 kind 不合法：${JSON.stringify(ev.kind)}`);
+        const missing = [...BASE_KEYS].filter(k => !Object.prototype.hasOwnProperty.call(ev, k));
+        assert(missing.length === 0, `活動 ${ev.id} 缺少必備欄位：${missing.join(", ")}`);
+        for (const [k, v] of Object.entries(ev)) {
+          if (k === "memo") continue; // 已於上方嚴格驗證 { title, html } 格式
+          assert(EV_SCHEMA.has(k), `活動 ${ev.id} 出現原網站範本未曾出現的欄位：${k}`);
+          const t = jsType(v);
+          assert(EV_SCHEMA.get(k).has(t),
+            `活動 ${ev.id} 欄位 "${k}" 型別 ${t} 不符範本（允許：${[...EV_SCHEMA.get(k)].join("/")}）`);
+        }
+      }
+    }
+    checkpoint("活動Schema/型別");
+
+    // (5/6) 時間格式合法性
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        if (ev.time !== undefined) {
+          validateTimeStr(ev.time, `活動 ${ev.id}（${ev.title || "未命名"}）`);
+        }
+      }
+    }
+    checkpoint("時間格式");
+
+    // (6/6) dayDate 一致性與全檔 event id 唯一性
+    const allEvIds = [];
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        assert(ev.dayDate === day.date, `活動 ${ev.id} 的 dayDate 與所屬日 ${day.date} 不一致`);
+        allEvIds.push(ev.id);
+      }
+    }
+    assert(allEvIds.length === new Set(allEvIds).size, "新檔存在重複的 event id");
+    checkpoint("dayDate/id唯一");
+
+    assert(checkpoints.length === TOTAL_NEW_CHECKS,
+      `驗收段落未全部執行：${checkpoints.length}/${TOTAL_NEW_CHECKS}`);
+
+    return {
+      newDoc,
+      serialized,
+      filename: sanitizeFilename(cleanTitle),
+      checkpoints,
+      totalChecks: TOTAL_NEW_CHECKS,
+      warnings,
+      stats: {
+        daysCount: newDoc.days.length,
+        eventsCount: totalEvents,
+        refCards,
+        memoCount,
+        base64Count: newImgs.total,
+        byteSize: new Blob([serialized]).size
+      }
+    };
+  }
+
+  return {
+    sha256,
+    inspectDoc,
+    inspectTemplate,
+    expandDateRange,
+    buildLightweightView,
+    buildAiPrompt,
+    buildNewTripPrompt,
+    extractJsonBlock,
+    applyAndVerify,
+    buildNewTripAndVerify,
+    nextVersionFilename,
+    sanitizeFilename
+  };
+})();
+
+/* =========================================================================
+   UI Controller (Dual Mode: Patch Existing + Create New From Template)
+   ========================================================================= */
+(() => {
+  if (typeof document === "undefined") return;
+
+  const state = {
+    mode: "patch", // "patch" | "new"
+    // Mode 1 state
+    originalDoc: null,
+    originalFilename: "",
+    currentDoc: null,
+    currentFilename: "",
+    undoStack: [],
+    pendingResult: null,
+    // Mode 2 state
+    tplDoc: null,
+    tplFilename: "",
+    tplInfo: null,
+    pendingNewTrip: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function escHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function trunc(val, n = 80) {
+    const s = typeof val === "string" ? val : JSON.stringify(val);
+    if (s === undefined) return "(無)";
+    return s.length <= n ? s : s.slice(0, n) + `...(共${s.length}字)`;
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function downloadJson(jsonText, filename) {
+    const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  // --- Mode Switcher ---
+  function switchMode(mode) {
+    state.mode = mode;
+    const isNew = mode === "new";
+    $("appHeader").classList.toggle("mode-new", isNew);
+    $("tabPatch").classList.toggle("active", !isNew);
+    $("tabNew").classList.toggle("active", isNew);
+    $("tabPatch").setAttribute("aria-selected", String(!isNew));
+    $("tabNew").setAttribute("aria-selected", String(isNew));
+    $("patchModeView").classList.toggle("hidden", isNew);
+    $("newModeView").classList.toggle("hidden", !isNew);
+    $("headerSub").textContent = isNew
+      ? "載入舊檔擷取欄位骨架・零舊資料殘留・6/6 新旅程防呆驗收"
+      : "純瀏覽器離線運算・不修改原網站・8/8 強制防呆驗收（零誤改、零遺失）";
+
+    if (isNew && state.currentDoc) {
+      $("reuseFromPatchWrap").classList.remove("hidden");
+    } else {
+      $("reuseFromPatchWrap").classList.add("hidden");
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  $("tabPatch").addEventListener("click", () => switchMode("patch"));
+  $("tabNew").addEventListener("click", () => switchMode("new"));
+
+  // =========================================================================
+  // MODE 1 UI LOGIC
+  // =========================================================================
+  function loadIntoPatchState(doc, filename, alertHtml) {
+    state.originalDoc = JSON.parse(JSON.stringify(doc));
+    state.originalFilename = filename;
+    state.currentDoc = JSON.parse(JSON.stringify(doc));
+    state.currentFilename = filename;
+    state.undoStack = [];
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    $("patchError").innerHTML = "";
+    $("fileDropLabel").textContent = `已載入：${filename}（點此可重新選擇）`;
+    $("fileAlert").innerHTML = alertHtml;
+    refreshPatchUI();
+  }
+
+  function refreshPatchUI() {
+    if (!state.currentDoc) return;
+    const serialized = JSON.stringify(state.currentDoc, null, 2);
+    const byteSize = new Blob([serialized]).size;
+    const info = ItineraryEngine.inspectDoc(state.currentDoc, byteSize);
+
+    $("summaryWrap").classList.remove("hidden");
+    $("step2Card").classList.remove("disabled");
+    $("step3Card").classList.remove("disabled");
+
+    $("metricsGrid").innerHTML = `
+      <div class="metric"><div class="val">${info.daysCount}</div><div class="lbl">天數 (days)</div></div>
+      <div class="metric"><div class="val">${info.eventsCount}</div><div class="lbl">活動數 (events)</div></div>
+      <div class="metric"><div class="val">${info.refCards}</div><div class="lbl">參考卡 (time空)</div></div>
+      <div class="metric"><div class="val">${info.base64Count}</div><div class="lbl">Base64 圖片</div></div>
+      <div class="metric"><div class="val">${info.shortcutsCount} / ${info.mapsCount}</div><div class="lbl">捷徑 / 地圖連結</div></div>
+      <div class="metric"><div class="val">${formatBytes(info.byteSize)}</div><div class="lbl">檔案大小</div></div>
+    `;
+
+    $("fileNameBadge").textContent = state.currentFilename;
+    if (state.undoStack.length === 0) {
+      $("versionStatus").textContent = "目前為原始載入版本（請先核對上方數字與網站一致）";
+      $("btnUndo").classList.add("hidden");
+      $("btnReset").classList.add("hidden");
+      $("btnDownloadCurrent").classList.add("hidden");
+    } else {
+      $("versionStatus").textContent = `已套用 ${state.undoStack.length} 次修補（隨時可復原或下載）`;
+      $("btnUndo").classList.remove("hidden");
+      $("btnReset").classList.remove("hidden");
+      $("btnDownloadCurrent").classList.remove("hidden");
+    }
+
+    refreshLightPreview();
+  }
+
+  function refreshLightPreview() {
+    if (!state.currentDoc) return;
+    const includeMemoText = $("optIncludeMemoText").checked;
+    const light = ItineraryEngine.buildLightweightView(state.currentDoc, { includeMemoText });
+    const lightJson = JSON.stringify(light, null, 2);
+    const fullSize = new Blob([JSON.stringify(state.currentDoc, null, 2)]).size;
+    const lightSize = new Blob([lightJson]).size;
+    const ratio = fullSize > 0 ? Math.max(1, Math.round((1 - lightSize / fullSize) * 100)) : 0;
+    $("lightStats").textContent =
+      `輕量版大小：${formatBytes(lightSize)}（較原檔縮減約 ${ratio}%）｜合法 kind：${light.valid_kinds.map(k => JSON.stringify(k)).join("、")}`;
+    $("lightPreview").textContent = lightJson;
+  }
+
+  function handlePatchFile(file) {
+    if (!file) return;
+    $("fileAlert").innerHTML = "";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        ItineraryEngine.inspectDoc(parsed, file.size);
+        loadIntoPatchState(
+          parsed,
+          file.name,
+          `<div class="alert alert-success">✅ 原檔前置檢查通過，可開始產生輕量行程或貼上修改指令。</div>`
+        );
+        showToast("已成功載入行程 JSON");
+      } catch (err) {
+        $("fileAlert").innerHTML = `<div class="alert alert-error">❌ 讀取或前置檢查失敗：${escHtml(err.message)}</div>`;
+      }
+    };
+    reader.onerror = () => {
+      $("fileAlert").innerHTML = `<div class="alert alert-error">❌ 無法讀取檔案，請重試。</div>`;
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function renderPatchPreview(result) {
+    state.pendingResult = result;
+    const { diff, checkpoints, totalChecks, stats } = result;
+    const outName = ItineraryEngine.nextVersionFilename(state.currentFilename);
+
+    $("verifyBanner").innerHTML = `
+      <div class="alert alert-success">
+        <strong>✅ 驗收全數通過｜checks executed: ${checkpoints.length}/${totalChecks}</strong><br>
+        輸出檔名：<code>${escHtml(outName)}</code><br>
+        未動天數：${stats.untouchedDays}｜events：${stats.eventsBefore} → ${stats.eventsAfter}｜參考卡：${stats.refBefore} → ${stats.refAfter}<br>
+        Base64：${stats.base64Before} → ${stats.base64After}｜shortcuts：${stats.shortcutsBefore} → ${stats.shortcutsAfter}｜maps短網址：${stats.mapsBefore} → ${stats.mapsAfter}
+      </div>
+    `;
+
+    $("checksWrap").innerHTML = checkpoints
+      .map((c, idx) => `<span class="check-pill">✓ ${idx + 1}. ${escHtml(c)}</span>`)
+      .join("");
+
+    let html = "";
+
+    if (diff.delete.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--danger);">🗑️ 即將刪除活動（${diff.delete.length} 筆）</div>`;
+      for (const d of diff.delete) {
+        const warnBits = [];
+        if (d.hasMemo) warnBits.push("含筆記");
+        if (d.imgCount > 0) warnBits.push(`含 ${d.imgCount} 張 Base64 圖片`);
+        html += `
+          <div class="diff-item del">
+            <div class="diff-meta">${escHtml(d.dn)} (${escHtml(d.date)}) ・ id: ${escHtml(d.id)}</div>
+            <strong>${escHtml(d.time ? d.time + " " : "(參考卡) ")}${escHtml(d.title)}</strong>
+            ${warnBits.length ? `<div style="margin-top:4px;color:var(--danger);font-weight:600;">⚠️ 注意：此筆活動${warnBits.join("、")}，刪除後將一併移除</div>` : ""}
+          </div>
+        `;
+      }
+    }
+
+    if (diff.modify.length > 0) {
+      html += `<div class="diff-group-title">✏️ 修改活動（${diff.modify.length} 筆）</div>`;
+      for (const m of diff.modify) {
+        let rows = "";
+        for (const fc of m.fieldChanges) {
+          rows += `<li><strong>${escHtml(fc.key)}</strong>：<span class="old-val">${escHtml(trunc(fc.oldVal))}</span> → <span class="new-val">${escHtml(trunc(fc.newVal))}</span></li>`;
+        }
+        if (m.memoAppended) {
+          const tag = m.memoAppended.created ? "新建筆記" : "追加筆記（原筆記完整保留）";
+          rows += `<li><strong>memo（${tag}）</strong>：<span class="new-val">+ ${escHtml(trunc(m.memoAppended.html, 120))}</span></li>`;
+        }
+        if (!rows) rows = `<li style="color:var(--muted)">（欄位值與原本相同）</li>`;
+        html += `
+          <div class="diff-item">
+            <div class="diff-meta">${escHtml(m.dn)} (${escHtml(m.date)}) ・ id: ${escHtml(m.id)}</div>
+            <strong>${escHtml(m.title)}</strong>
+            <ul class="diff-kv">${rows}</ul>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.move.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--purple);">🚚 跨日搬移（${diff.move.length} 筆）</div>`;
+      for (const mv of diff.move) {
+        const keep = ["原 id"];
+        if (mv.hasMemo) keep.push("原筆記");
+        if (mv.hasImage) keep.push("原圖片");
+        html += `
+          <div class="diff-item move">
+            <div class="diff-meta">id: ${escHtml(mv.id)} ・ 完整保留：${keep.join("、")}</div>
+            <strong>${escHtml(mv.title)}</strong>
+            <div>${escHtml(mv.fromDn)} (${escHtml(mv.fromDate)}) → <strong>${escHtml(mv.toDn)} (${escHtml(mv.toDate)})</strong></div>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.add.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--success);">➕ 新增活動（${diff.add.length} 筆）</div>`;
+      for (const a of diff.add) {
+        const extra = Object.entries(a.fields)
+          .filter(([k]) => k !== "time" && k !== "title")
+          .map(([k, v]) => `<li><strong>${escHtml(k)}</strong>：${escHtml(trunc(v))}</li>`)
+          .join("");
+        html += `
+          <div class="diff-item add">
+            <div class="diff-meta">${escHtml(a.dn)} (${escHtml(a.date)}) ・ 新 id: ${escHtml(a.id)} ・ kind: ${escHtml(JSON.stringify(a.kind))}</div>
+            <strong>${escHtml(a.time ? a.time + " " : "(參考卡) ")}${escHtml(a.title)}</strong>
+            ${extra || a.hasMemo ? `<ul class="diff-kv">${extra}${a.hasMemo ? "<li><strong>memo</strong>：已建立初始筆記</li>" : ""}</ul>` : ""}
+          </div>
+        `;
+      }
+    }
+
+    if (diff.dayModify.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--warn);">📅 修改日期標題／備註（${diff.dayModify.length} 天）</div>`;
+      for (const dm of diff.dayModify) {
+        const rows = dm.changes.map(c =>
+          `<li><strong>${escHtml(c.key)}</strong>：<span class="old-val">${escHtml(trunc(c.oldVal))}</span> → <span class="new-val">${escHtml(trunc(c.newVal))}</span></li>`
+        ).join("");
+        html += `
+          <div class="diff-item day">
+            <div class="diff-meta">${escHtml(dm.dn)} (${escHtml(dm.date)})</div>
+            <ul class="diff-kv">${rows}</ul>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.reorder.length > 0) {
+      html += `<div class="diff-group-title" style="color:#0369a1;">🔀 同日依時間重排（${diff.reorder.length} 天）</div>`;
+      for (const r of diff.reorder) {
+        html += `
+          <div class="diff-item reorder">
+            <div class="diff-meta">${escHtml(r.dn)} (${escHtml(r.date)}) ・ 參考卡鎖定原位</div>
+            <div>${r.changed ? "已依時間重新排序（共 " + r.afterOrder.length + " 筆活動）" : "順序原已符合時間先後"}</div>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.topModify.length > 0) {
+      html += `<div class="diff-group-title">⚙️ 頂層欄位變更（${diff.topModify.length} 項）</div>`;
+      for (const tm of diff.topModify) {
+        html += `
+          <div class="diff-item">
+            <strong>${escHtml(tm.key)}</strong>：<span class="old-val">${escHtml(trunc(tm.oldVal))}</span> → <span class="new-val">${escHtml(trunc(tm.newVal))}</span>
+          </div>
+        `;
+      }
+    }
+
+    $("diffContainer").innerHTML = html;
+
+    if (diff.delete.length > 0) {
+      $("deleteConfirmWrap").classList.remove("hidden");
+      $("deleteConfirmText").textContent = `我已逐筆確認要永久刪除上述 ${diff.delete.length} 筆活動`;
+      $("chkConfirmDelete").checked = false;
+      $("btnApplyAndDownload").disabled = true;
+      $("btnApplyOnly").disabled = true;
+    } else {
+      $("deleteConfirmWrap").classList.add("hidden");
+      $("btnApplyAndDownload").disabled = false;
+      $("btnApplyOnly").disabled = false;
+    }
+
+    $("step4Card").classList.remove("hidden");
+    $("step4Card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function commitPendingPatch(shouldDownload) {
+    if (!state.pendingResult) return;
+    const { newDoc, serialized } = state.pendingResult;
+    const nextFilename = ItineraryEngine.nextVersionFilename(state.currentFilename);
+
+    state.undoStack.push({
+      doc: JSON.parse(JSON.stringify(state.currentDoc)),
+      filename: state.currentFilename
+    });
+
+    state.currentDoc = newDoc;
+    state.currentFilename = nextFilename;
+    state.pendingResult = null;
+
+    if (shouldDownload) {
+      downloadJson(serialized, nextFilename);
+      showToast(`已套用並下載 ${nextFilename}`);
+    } else {
+      showToast(`已套用至工作版本（${nextFilename}），可繼續下一輪修改`);
+    }
+
+    $("patchInput").value = "";
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+  }
+
+  // Wire Mode 1 events
+  const fileDrop = $("fileDrop");
+  const fileInput = $("fileInput");
+  fileDrop.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    handlePatchFile(f);
+  });
+  fileDrop.addEventListener("dragover", (e) => { e.preventDefault(); fileDrop.classList.add("dragover"); });
+  fileDrop.addEventListener("dragleave", () => fileDrop.classList.remove("dragover"));
+  fileDrop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    fileDrop.classList.remove("dragover");
+    handlePatchFile(e.dataTransfer.files[0]);
+  });
+
+  $("optIncludeMemoText").addEventListener("change", refreshLightPreview);
+
+  $("btnCopyFullPrompt").addEventListener("click", async () => {
+    const text = ItineraryEngine.buildAiPrompt(state.currentDoc, {
+      includeMemoText: $("optIncludeMemoText").checked
+    });
+    const ok = await copyText(text);
+    showToast(ok ? "✅ 已複製「AI 提示詞＋輕量行程」，直接貼給 AI 即可！" : "複製失敗，請手動選取下方預覽複製");
+  });
+
+  $("btnCopyLightOnly").addEventListener("click", async () => {
+    const light = ItineraryEngine.buildLightweightView(state.currentDoc, {
+      includeMemoText: $("optIncludeMemoText").checked
+    });
+    const ok = await copyText(JSON.stringify(light, null, 2));
+    showToast(ok ? "✅ 已複製輕量版行程 JSON" : "複製失敗");
+  });
+
+  $("btnPasteClip").addEventListener("click", async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      $("patchInput").value = txt;
+      showToast("已貼上剪貼簿內容");
+    } catch (_) {
+      showToast("瀏覽器未授權直接讀取剪貼簿，請長按輸入框手動貼上");
+    }
+  });
+
+  $("btnClearPatch").addEventListener("click", () => {
+    $("patchInput").value = "";
+    $("patchError").innerHTML = "";
+    $("step4Card").classList.add("hidden");
+    state.pendingResult = null;
+  });
+
+  $("btnPreviewPatch").addEventListener("click", () => {
+    $("patchError").innerHTML = "";
+    $("step4Card").classList.add("hidden");
+    state.pendingResult = null;
+    try {
+      const result = ItineraryEngine.applyAndVerify(state.currentDoc, $("patchInput").value);
+      renderPatchPreview(result);
+    } catch (err) {
+      $("patchError").innerHTML = `<div class="alert alert-error">❌ 驗證未通過（已中止，原資料毫髮無傷）：<br>${escHtml(err.message)}</div>`;
+    }
+  });
+
+  $("chkConfirmDelete").addEventListener("change", (e) => {
+    $("btnApplyAndDownload").disabled = !e.target.checked;
+    $("btnApplyOnly").disabled = !e.target.checked;
+  });
+
+  $("btnApplyAndDownload").addEventListener("click", () => commitPendingPatch(true));
+  $("btnApplyOnly").addEventListener("click", () => commitPendingPatch(false));
+
+  $("btnUndo").addEventListener("click", () => {
+    if (state.undoStack.length === 0) return;
+    const prev = state.undoStack.pop();
+    state.currentDoc = prev.doc;
+    state.currentFilename = prev.filename;
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+    showToast("↩️ 已復原至上一步");
+  });
+
+  $("btnReset").addEventListener("click", () => {
+    if (!state.originalDoc) return;
+    if (!confirm("確定要放棄所有已套用的修改，重置回剛上傳的原始檔案嗎？")) return;
+    state.currentDoc = JSON.parse(JSON.stringify(state.originalDoc));
+    state.currentFilename = state.originalFilename;
+    state.undoStack = [];
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+    showToast("🔄 已重置回原始上傳檔");
+  });
+
+  $("btnDownloadCurrent").addEventListener("click", () => {
+    if (!state.currentDoc) return;
+    downloadJson(JSON.stringify(state.currentDoc, null, 2), state.currentFilename);
+    showToast(`⬇️ 已下載 ${state.currentFilename}`);
+  });
+
+  // =========================================================================
+  // MODE 2 UI LOGIC (NEW TRIP FROM TEMPLATE)
+  // =========================================================================
+  function getKeptTopKeys() {
+    const kept = new Set();
+    document.querySelectorAll("#extraTopFieldsList input[type='checkbox']").forEach(chk => {
+      if (chk.checked) kept.add(chk.dataset.key);
+    });
+    return kept;
+  }
+
+  function updateNewDateSummary() {
+    const startDate = $("newStartDate").value;
+    const endDate = $("newEndDate").value;
+    $("newDateError").innerHTML = "";
+    if (!startDate || !endDate) {
+      $("newDateSummary").classList.add("hidden");
+      return null;
+    }
+    try {
+      const dates = ItineraryEngine.expandDateRange(startDate, endDate);
+      $("newDateSummary").textContent =
+        `📅 共 ${dates.length} 天｜D1 (${dates[0]}) ～ D${dates.length} (${dates[dates.length - 1]})`;
+      $("newDateSummary").classList.remove("hidden");
+      return dates;
+    } catch (err) {
+      $("newDateSummary").classList.add("hidden");
+      $("newDateError").innerHTML = `<div class="alert alert-error">❌ ${escHtml(err.message)}</div>`;
+      return null;
+    }
+  }
+
+  function loadTemplateDoc(doc, filename) {
+    const info = ItineraryEngine.inspectTemplate(doc, new Blob([JSON.stringify(doc)]).size);
+    state.tplDoc = JSON.parse(JSON.stringify(doc));
+    state.tplFilename = filename;
+    state.tplInfo = info;
+    state.pendingNewTrip = null;
+
+    $("tplFileDropLabel").textContent = `已載入範本：${filename}（點此可更換）`;
+    $("tplAlert").innerHTML = `<div class="alert alert-success">✅ 範本結構擷取完成！已鎖定頂層鍵順序與欄位型別，舊行程與圖片不會帶入新旅程。</div>`;
+    $("tplSummaryWrap").classList.remove("hidden");
+    $("newStep2Card").classList.remove("disabled");
+    $("newStep3Card").classList.remove("disabled");
+    $("newStep4Card").classList.add("hidden");
+    $("newTripError").innerHTML = "";
+
+    $("tplMetricsGrid").innerHTML = `
+      <div class="metric"><div class="val">${info.topKeys.length}</div><div class="lbl">頂層鍵數</div></div>
+      <div class="metric"><div class="val">${info.eventEditableFields.length}</div><div class="lbl">活動欄位數</div></div>
+      <div class="metric"><div class="val">${info.validKinds.length}</div><div class="lbl">合法 kind 數</div></div>
+    `;
+
+    // Render extra top-level fields checkboxes
+    if (info.extraTopFields.length > 0) {
+      $("extraTopFieldsBox").classList.remove("hidden");
+      $("extraTopFieldsList").innerHTML = info.extraTopFields.map(f => {
+        const badge = f.imgCount > 0
+          ? `<span class="field-badge imgwarn">含 ${f.imgCount} 張圖</span>`
+          : (f.defaultKeep
+              ? `<span class="field-badge keep">預設沿用</span>`
+              : `<span class="field-badge clear">預設清空</span>`);
+        return `
+          <div class="top-field-item">
+            <label>
+              <input type="checkbox" data-key="${escHtml(f.key)}" ${f.defaultKeep ? "checked" : ""}>
+              <div>
+                <strong>${escHtml(f.key)}</strong>
+                <div style="font-size:12px;color:var(--muted);">${escHtml(f.summary)}</div>
+              </div>
+            </label>
+            ${badge}
+          </div>
+        `;
+      }).join("");
+    } else {
+      $("extraTopFieldsBox").classList.add("hidden");
+    }
+
+    $("tplSchemaPreview").textContent = JSON.stringify({
+      top_keys_order: info.topKeys,
+      day_editable_fields: info.dayEditableFields,
+      valid_kinds: info.validKinds,
+      event_editable_fields: info.eventEditableFields
+    }, null, 2);
+
+    updateNewDateSummary();
+  }
+
+  function handleTemplateFile(file) {
+    if (!file) return;
+    $("tplAlert").innerHTML = "";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        loadTemplateDoc(parsed, file.name);
+        showToast("已載入格式範本");
+      } catch (err) {
+        $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 範本解析失敗：${escHtml(err.message)}</div>`;
+      }
+    };
+    reader.onerror = () => {
+      $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 無法讀取檔案，請重試。</div>`;
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function renderNewTripPreview(result) {
+    state.pendingNewTrip = result;
+    const { newDoc, filename, checkpoints, totalChecks, warnings, stats } = result;
+
+    $("newVerifyBanner").innerHTML = `
+      <div class="alert alert-success">
+        <strong>✅ 新旅程驗收全數通過｜checks executed: ${checkpoints.length}/${totalChecks}</strong><br>
+        輸出檔名：<code>${escHtml(filename)}</code><br>
+        天數：${stats.daysCount} 天｜活動數：${stats.eventsCount} 筆｜參考卡：${stats.refCards} 張｜含筆記：${stats.memoCount} 筆<br>
+        Base64 圖片：${stats.base64Count} 張｜檔案大小：${formatBytes(stats.byteSize)}
+      </div>
+    `;
+
+    $("newChecksWrap").innerHTML = checkpoints
+      .map((c, idx) => `<span class="check-pill">✓ ${idx + 1}. ${escHtml(c)}</span>`)
+      .join("");
+
+    $("newWarningsWrap").innerHTML = warnings.length > 0
+      ? `<div class="alert alert-warn">ℹ️ ${warnings.map(w => escHtml(w)).join("<br>")}</div>`
+      : "";
+
+    let html = "";
+    newDoc.days.forEach((day, idx) => {
+      const evHtml = day.events.length === 0
+        ? `<div style="font-size:13px;color:var(--muted);padding:4px 0;">（本日目前無活動）</div>`
+        : day.events.map(ev => {
+            const isRef = (ev.time || "") === "";
+            const kindChip = ev.kind ? `<span class="kind-chip">${escHtml(ev.kind)}</span>` : "";
+            const memoChip = ev.memo ? `<span class="memo-chip">📝 筆記</span>` : "";
+            return `
+              <div class="ev-row">
+                <span class="ev-time ${isRef ? "ref" : ""}">${isRef ? "參考卡" : escHtml(ev.time)}</span>
+                <div style="flex:1;">
+                  <strong>${escHtml(ev.title || "(無標題)")}</strong>${kindChip}${memoChip}
+                  <div style="font-size:11.5px;color:var(--muted);font-family:ui-monospace,monospace;">id: ${escHtml(ev.id)}</div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+      html += `
+        <div class="day-preview-card">
+          <div class="day-preview-head">
+            <div><span class="dn-tag">D${idx + 1}</span>${escHtml(day.date)}${day.title ? " ・ " + escHtml(day.title) : ""}</div>
+            <span style="font-size:12px;color:var(--muted);">${day.events.length} 筆</span>
+          </div>
+          <div class="day-preview-body">
+            ${day.note ? `<div style="font-size:12.5px;color:var(--warn);margin-bottom:6px;">📌 ${escHtml(day.note)}</div>` : ""}
+            ${evHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    $("newPreviewContainer").innerHTML = html;
+    $("newStep4Card").classList.remove("hidden");
+    $("newStep4Card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function runNewTripBuild(emptyShell) {
+    $("newTripError").innerHTML = "";
+    $("newStep4Card").classList.add("hidden");
+    state.pendingNewTrip = null;
+    try {
+      const result = ItineraryEngine.buildNewTripAndVerify(
+        state.tplDoc,
+        {
+          title: $("newTripTitle").value,
+          startDate: $("newStartDate").value,
+          endDate: $("newEndDate").value,
+          keepTopKeys: getKeptTopKeys(),
+          autoSort: $("optAutoSortNewTrip").checked,
+          emptyShell
+        },
+        emptyShell ? null : $("newTripInput").value
+      );
+      renderNewTripPreview(result);
+    } catch (err) {
+      $("newTripError").innerHTML = `<div class="alert alert-error">❌ 驗證未通過（已中止）：<br>${escHtml(err.message)}</div>`;
+      $("newTripError").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  // Wire Mode 2 events
+  const tplFileDrop = $("tplFileDrop");
+  const tplFileInput = $("tplFileInput");
+  tplFileDrop.addEventListener("click", () => tplFileInput.click());
+  tplFileInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    handleTemplateFile(f);
+  });
+  tplFileDrop.addEventListener("dragover", (e) => { e.preventDefault(); tplFileDrop.classList.add("dragover"); });
+  tplFileDrop.addEventListener("dragleave", () => tplFileDrop.classList.remove("dragover"));
+  tplFileDrop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    tplFileDrop.classList.remove("dragover");
+    handleTemplateFile(e.dataTransfer.files[0]);
+  });
+
+  $("btnReuseFromPatch").addEventListener("click", () => {
+    if (!state.currentDoc) return;
+    try {
+      loadTemplateDoc(state.currentDoc, state.currentFilename);
+      showToast("已沿用修補模式的檔案作為格式範本");
+    } catch (err) {
+      $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 範本解析失敗：${escHtml(err.message)}</div>`;
+    }
+  });
+
+  $("newStartDate").addEventListener("change", () => {
+    if ($("newStartDate").value && !$("newEndDate").value) {
+      $("newEndDate").value = $("newStartDate").value;
+    }
+    updateNewDateSummary();
+  });
+  $("newEndDate").addEventListener("change", updateNewDateSummary);
+
+  $("btnCopyNewTripPrompt").addEventListener("click", async () => {
+    const title = $("newTripTitle").value.trim();
+    const startDate = $("newStartDate").value;
+    const endDate = $("newEndDate").value;
+    if (!title) {
+      showToast("請先填寫「新旅程名稱」");
+      $("newTripTitle").focus();
+      return;
+    }
+    if (!updateNewDateSummary()) {
+      showToast("請先填寫正確的起訖日期");
+      return;
+    }
+    const prompt = ItineraryEngine.buildNewTripPrompt(state.tplDoc, { title, startDate, endDate });
+    const ok = await copyText(prompt);
+    showToast(ok ? "✅ 已複製「新建旅程 AI 提示詞」，直接貼給 AI 即可！" : "複製失敗");
+  });
+
+  $("btnBuildEmptyShell").addEventListener("click", () => runNewTripBuild(true));
+  $("btnPreviewNewTrip").addEventListener("click", () => runNewTripBuild(false));
+
+  $("btnPasteNewClip").addEventListener("click", async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      $("newTripInput").value = txt;
+      showToast("已貼上剪貼簿內容");
+    } catch (_) {
+      showToast("瀏覽器未授權直接讀取剪貼簿，請長按輸入框手動貼上");
+    }
+  });
+
+  $("btnClearNewTrip").addEventListener("click", () => {
+    $("newTripInput").value = "";
+    $("newTripError").innerHTML = "";
+    $("newStep4Card").classList.add("hidden");
+    state.pendingNewTrip = null;
+  });
+
+  $("btnDownloadNewTrip").addEventListener("click", () => {
+    if (!state.pendingNewTrip) return;
+    downloadJson(state.pendingNewTrip.serialized, state.pendingNewTrip.filename);
+    showToast(`⬇️ 已下載新旅程 ${state.pendingNewTrip.filename}`);
+  });
+
+  $("btnLoadIntoPatchMode").addEventListener("click", () => {
+    if (!state.pendingNewTrip) return;
+    const { newDoc, filename } = state.pendingNewTrip;
+    loadIntoPatchState(
+      newDoc,
+      filename,
+      `<div class="alert alert-info">🆕 已從「建立新旅程」載入 <strong>${escHtml(filename)}</strong>，現在可繼續使用修補模式進行微調。</div>`
+    );
+    switchMode("patch");
+    showToast("已切換至修補模式，可繼續微調新旅程");
+  });
+})();
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ItineraryEngine };
+}
+</script>
+</body>
+</html>
