@@ -1,0 +1,4504 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>旅のノート JSON 安全修補工具 v3</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1c2430;
+    --muted: #5f6c7b;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-soft: #eff6ff;
+    --teal: #0f766e;
+    --teal-hover: #115e59;
+    --teal-soft: #f0fdfa;
+    --teal-border: #99f6e4;
+    --success: #15803d;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --danger: #b91c1c;
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+    --warn: #b45309;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --purple: #6d28d9;
+    --purple-bg: #f5f3ff;
+    --pink: #be185d;
+    --pink-bg: #fdf2f8;
+    --radius: 14px;
+    --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    padding: 0 0 88px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", sans-serif;
+    line-height: 1.5;
+    font-size: 15px;
+  }
+  header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    color: #fff;
+    padding: 16px 16px 13px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    box-shadow: 0 2px 12px rgba(30, 58, 138, 0.22);
+    transition: background 0.25s;
+  }
+  header.mode-new {
+    background: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+    box-shadow: 0 2px 12px rgba(15, 118, 110, 0.24);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ver-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.22);
+    letter-spacing: 0.4px;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    opacity: 0.9;
+  }
+
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 11px;
+    background: rgba(15, 23, 42, 0.22);
+    padding: 4px;
+    border-radius: 11px;
+  }
+  .mode-tab {
+    border: none;
+    border-radius: 8px;
+    padding: 8px 10px;
+    min-height: 38px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: transparent;
+    color: rgba(255,255,255,0.84);
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  }
+  .mode-tab.active {
+    background: #fff;
+    color: #1e3a8a;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.14);
+  }
+  header.mode-new .mode-tab.active {
+    color: #0f766e;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 14px 12px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-badge.teal { background: var(--teal); }
+  .step-badge.green { background: var(--success); }
+  .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .step-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 2px 0 0;
+  }
+
+  .file-drop {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 20px 14px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+  }
+  .file-drop.teal:hover, .file-drop.teal.dragover {
+    border-color: var(--teal);
+    background: var(--teal-soft);
+  }
+  .file-drop input { display: none; }
+  .file-drop .icon { font-size: 28px; margin-bottom: 4px; }
+  .file-drop .label { font-weight: 600; color: var(--primary); }
+  .file-drop.teal .label { color: var(--teal); }
+  .file-drop .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .trip-banner {
+    margin-top: 12px;
+    padding: 11px 13px;
+    border-radius: 10px;
+    background: var(--primary-soft);
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+  }
+  .trip-banner .tb-title {
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .trip-banner .tb-meta {
+    font-size: 12.5px;
+    color: #3b5998;
+    margin-top: 2px;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .metric {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 8px;
+    text-align: center;
+  }
+  .metric .val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .metric .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Section selector pills */
+  .scope-box {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .scope-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .scope-top .scope-title {
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .preset-btn {
+    min-height: 28px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid #bfdbfe;
+    cursor: pointer;
+  }
+  .preset-btn:hover { background: var(--primary-soft); }
+
+  .scope-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr));
+    gap: 7px;
+  }
+  .scope-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .scope-chip:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    color: #1e3a8a;
+  }
+  .scope-chip input {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .scope-chip .sc-sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    line-height: 1.25;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+  .form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  input[type="text"], input[type="date"] {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+  }
+  input[type="text"]:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  .date-summary-bar {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--teal-soft);
+    border: 1px solid var(--teal-border);
+    color: #115e59;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .top-fields-box {
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+  }
+  .top-fields-box .box-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .top-field-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .top-field-item:first-of-type { border-top: none; }
+  .top-field-item label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+  }
+  .top-field-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--teal);
+    flex-shrink: 0;
+  }
+  .field-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .field-badge.clear { background: #e2e8f0; color: #334155; }
+  .field-badge.keep { background: var(--teal-soft); color: var(--teal); border: 1px solid var(--teal-border); }
+  .field-badge.imgwarn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 14px;
+    min-height: 44px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: opacity 0.15s, transform 0.05s, background 0.15s;
+  }
+  button:active { transform: scale(0.98); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; flex: 1 1 180px; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn-teal { background: var(--teal); color: #fff; flex: 1 1 180px; }
+  .btn-teal:hover:not(:disabled) { background: var(--teal-hover); }
+  .btn-success { background: var(--success); color: #fff; flex: 1 1 180px; }
+  .btn-secondary { background: #e2e8f0; color: var(--text); flex: 1 1 130px; }
+  .btn-outline { background: #fff; color: var(--primary); border: 1.5px solid var(--primary); flex: 1 1 140px; }
+  .btn-outline-teal { background: #fff; color: var(--teal); border: 1.5px solid var(--teal); flex: 1 1 140px; }
+  .btn-danger-outline { background: #fff; color: var(--danger); border: 1.5px solid var(--danger-border); }
+  .btn-sm { min-height: 36px; padding: 6px 12px; font-size: 13px; flex: 0 1 auto; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 13.5px;
+  }
+  .toggle-row label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin: 0;
+  }
+  .toggle-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+  }
+  .toggle-row.teal input[type="checkbox"] {
+    accent-color: var(--teal);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 175px;
+    padding: 12px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    resize: vertical;
+    background: #fcfdff;
+    color: var(--text);
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  textarea.teal:focus {
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  }
+
+  .alert {
+    border-radius: 10px;
+    padding: 11px 13px;
+    font-size: 13.5px;
+    margin-top: 10px;
+    word-break: break-word;
+  }
+  .alert-error { background: var(--danger-bg); border: 1px solid var(--danger-border); color: var(--danger); }
+  .alert-success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success); }
+  .alert-warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn); }
+  .alert-info { background: var(--primary-soft); border: 1px solid #bfdbfe; color: #1e40af; }
+
+  .checks-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .check-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+  }
+
+  .diff-section { margin-top: 12px; }
+  .diff-group-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    margin: 14px 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .diff-item {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--primary);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: #fafbfc;
+    font-size: 13.5px;
+  }
+  .diff-item.del { border-left-color: var(--danger); background: var(--danger-bg); }
+  .diff-item.add { border-left-color: var(--success); background: var(--success-bg); }
+  .diff-item.move { border-left-color: var(--purple); background: var(--purple-bg); }
+  .diff-item.day { border-left-color: #d97706; background: var(--warn-bg); }
+  .diff-item.reorder { border-left-color: #0284c7; background: #f0f9ff; }
+  .diff-item.extra { border-left-color: var(--pink); background: var(--pink-bg); }
+  .diff-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .diff-kv {
+    margin: 4px 0 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .diff-kv li {
+    margin: 3px 0;
+    word-break: break-word;
+  }
+  .old-val {
+    text-decoration: line-through;
+    color: #991b1b;
+    background: rgba(254, 202, 202, 0.45);
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+  .new-val {
+    color: #166534;
+    background: rgba(187, 247, 208, 0.55);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .day-preview-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .day-preview-head {
+    background: #f8fafc;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .day-preview-head .dn-tag {
+    background: var(--teal);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-right: 6px;
+  }
+  .day-preview-body {
+    padding: 8px 12px;
+  }
+  .ev-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 13.5px;
+  }
+  .ev-row:last-child { border-bottom: none; }
+  .ev-time {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    font-weight: 700;
+    min-width: 54px;
+    color: var(--teal);
+  }
+  .ev-time.ref { color: var(--muted); font-weight: 600; }
+  .kind-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #fef3c7;
+    color: #92400e;
+    margin-left: 5px;
+  }
+  .memo-chip {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: #e0f2fe;
+    color: #0369a1;
+    margin-left: 5px;
+  }
+
+  .delete-confirm-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: var(--danger-bg);
+    border: 1.5px solid var(--danger-border);
+    color: var(--danger);
+    font-weight: 600;
+    font-size: 13.5px;
+  }
+  .delete-confirm-box label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .delete-confirm-box input {
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+    accent-color: var(--danger);
+    flex-shrink: 0;
+  }
+
+  .history-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  details {
+    margin-top: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    background: #fafafa;
+  }
+  details summary {
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  pre.code-preview {
+    margin: 8px 0 0;
+    padding: 10px;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    font-size: 12px;
+    overflow-x: auto;
+    max-height: 280px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #0f172a;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 999;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+    max-width: 90vw;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .hidden { display: none !important; }
+  @media (max-width: 480px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .scope-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header id="appHeader">
+  <h1>🧭 旅のノート JSON 安全工具 <span class="ver-pill">v3 全區塊版</span></h1>
+  <p id="headerSub">支援行程・購物・行李・待辦・備用・住宿・航班・資訊・預算｜9/9 強制防呆驗收</p>
+  <div class="mode-tabs" role="tablist">
+    <button type="button" class="mode-tab active" id="tabPatch" role="tab" aria-selected="true">🔧 修補既有旅程</button>
+    <button type="button" class="mode-tab" id="tabNew" role="tab" aria-selected="false">🆕 舊檔建新旅程</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- =====================================================================
+       MODE 1: PATCH EXISTING TRIP (ALL SECTIONS + 9/9 STRICT VERIFICATION)
+       ===================================================================== -->
+  <div id="patchModeView">
+
+    <!-- STEP 1 -->
+    <section class="card" id="step1Card">
+      <div class="step-header">
+        <span class="step-badge">1</span>
+        <div>
+          <h2 class="step-title">載入旅のノート匯出的 JSON</h2>
+          <div class="step-sub">檔案全程僅在瀏覽器離線處理，不上傳伺服器；無需人工核對，系統自動鎖定前後基準</div>
+        </div>
+      </div>
+
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="fileInput" accept=".json,application/json">
+        <div class="icon">📂</div>
+        <div class="label" id="fileDropLabel">點此選擇 .json 檔案（或拖曳至此）</div>
+        <div class="hint">自動保護行程與購物內的所有 Base64 圖片、HTML 筆記與參考卡</div>
+      </div>
+
+      <div id="fileAlert"></div>
+
+      <div id="summaryWrap" class="hidden">
+        <div class="trip-banner" id="tripBanner"></div>
+        <div class="metrics-grid" id="metricsGrid"></div>
+        <div class="history-bar" id="historyBar">
+          <div>
+            <strong id="fileNameBadge">-</strong>
+            <div style="font-size:12px;color:var(--muted)" id="versionStatus">已鎖定原始基準，修補後將自動執行 9/9 無損比對</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button type="button" class="btn-secondary btn-sm hidden" id="btnUndo">↩️ 復原上一步</button>
+            <button type="button" class="btn-danger-outline btn-sm hidden" id="btnReset">🔄 重置回原檔</button>
+            <button type="button" class="btn-outline btn-sm hidden" id="btnDownloadCurrent">⬇️ 下載目前版本</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="card disabled" id="step2Card">
+      <div class="step-header">
+        <span class="step-badge">2</span>
+        <div>
+          <h2 class="step-title">勾選要調整的區塊並複製給 AI</h2>
+          <div class="step-sub">只把本輪需要的區塊精簡匯出（自動隱藏所有圖片），節省字數又避免 AI 誤動其他區塊</div>
+        </div>
+      </div>
+
+      <div class="scope-box">
+        <div class="scope-top">
+          <span class="scope-title">本輪匯出給 AI 的區塊：</span>
+          <div class="preset-row">
+            <button type="button" class="preset-btn" id="presetDaysOnly">只選行程</button>
+            <button type="button" class="preset-btn" id="presetCommon">常用（行程+購物+待辦+備用）</button>
+            <button type="button" class="preset-btn" id="presetPrep">準備（購物+行李+待辦）</button>
+            <button type="button" class="preset-btn" id="presetAll">全選</button>
+          </div>
+        </div>
+        <div class="scope-grid" id="scopeGrid"></div>
+      </div>
+
+      <div class="toggle-row">
+        <label>
+          <input type="checkbox" id="optIncludeMemoText" checked>
+          <span>保留筆記純文字摘要（前 100 字，供 AI 了解背景）</span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="btnCopyFullPrompt">📋 複製「AI 提示詞＋輕量資料」</button>
+        <button type="button" class="btn-outline" id="btnCopyLightOnly">📄 僅複製輕量資料</button>
+      </div>
+
+      <details>
+        <summary>預覽已勾選區塊的輕量資料（點擊展開）</summary>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;" id="lightStats"></div>
+        <pre class="code-preview" id="lightPreview"></pre>
+      </details>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="card disabled" id="step3Card">
+      <div class="step-header">
+        <span class="step-badge">3</span>
+        <div>
+          <h2 class="step-title">貼上 AI 產出的修改指令（JSON Patch）</h2>
+          <div class="step-sub">支援同時修改行程、購物、行李、待辦、備用、住宿、航班、天氣、旅程資訊與預算</div>
+        </div>
+      </div>
+
+      <textarea id="patchInput" placeholder='直接貼上 AI 回覆的 JSON 修改指令（會自動去掉 ```json 標記），例如：
+{
+  "modify": [{ "id": "...", "fields": { "time": "10:30" } }],
+  "shopping": {
+    "add": [{ "text": "波丹妮護手霜", "category": "布拉格", "place": "老城區" }]
+  },
+  "todos": {
+    "modify": [{ "id": "...", "fields": { "done": true } }]
+  }
+}'></textarea>
+
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="btnPreviewPatch">🔍 驗證並預覽差異（9/9 驗收）</button>
+        <button type="button" class="btn-secondary" id="btnPasteClip">📥 貼上剪貼簿</button>
+        <button type="button" class="btn-secondary btn-sm" id="btnClearPatch">清空</button>
+      </div>
+
+      <details>
+        <summary>查看各區塊支援的修改指令格式（點擊展開）</summary>
+        <pre class="code-preview">{
+  "modify": [{ "id": "活動id", "fields": { "time": "10:30", "desc": "..." }, "append_memo": "&lt;p&gt;...&lt;/p&gt;", "create_memo_if_missing": false }],
+  "move": [{ "id": "活動id", "to_date": "YYYY-MM-DD", "insert_index": null }],
+  "add": [{ "date": "YYYY-MM-DD", "kind": "", "insert_index": null, "fields": { "time": "14:00", "title": "..." }, "memo_html": "" }],
+  "delete": [],
+  "day_modify": [{ "date": "YYYY-MM-DD", "fields": { "title": "...", "note": "...", "outline": "..." } }],
+  "reorder_dates": [],
+  "shopping": {
+    "add_categories": [],
+    "modify": [{ "id": "...", "fields": { "text": "...", "category": "...", "place": "...", "note": "...", "url": "...", "dayDate": "", "done": false }, "append_memo": "", "create_memo_if_missing": false }],
+    "add": [{ "text": "...", "category": "布拉格", "place": "", "url": "", "note": "", "dayDate": "", "done": false, "memo_html": "" }],
+    "delete": []
+  },
+  "luggage": {
+    "add_categories": [],
+    "modify": [{ "id": "...", "fields": { "text": "...", "category": "...", "done": true } }],
+    "add": [{ "text": "...", "category": "隨身物", "done": false }],
+    "delete": []
+  },
+  "todos": {
+    "modify": [{ "id": "...", "fields": { "text": "...", "done": true } }],
+    "add": [{ "text": "...", "done": false }],
+    "delete": []
+  },
+  "backups": {
+    "add_lists": [{ "name": "清單名稱" }],
+    "rename_lists": [{ "id": "list_id", "name": "新名稱" }],
+    "delete_lists": [],
+    "modify_items": [{ "id": "item_id", "fields": { "title": "...", "kind": "", "hours": "", "address": "", "mapUrl": "", "link": "", "note": "" }, "append_memo": "", "create_memo_if_missing": false }],
+    "add_items": [{ "list_id": "list_id（或用 list_name）", "title": "...", "kind": "", "hours": "", "address": "", "mapUrl": "", "link": "", "note": "", "memo_html": "" }],
+    "move_items": [{ "id": "item_id", "to_list_id": "目標list_id" }],
+    "delete_items": []
+  },
+  "accommodations": {
+    "modify": [{ "id": "...", "fields": { "name": "...", "address": "...", "mapUrl": "...", "checkin": "...", "checkout": "...", "booking": "...", "contact": "...", "note": "...", "dayDate": "..." } }],
+    "add": [{ "name": "...", "checkin": "YYYY-MM-DD", "checkout": "YYYY-MM-DD", "dayDate": "YYYY-MM-DD" }],
+    "delete": []
+  },
+  "flights": {
+    "modify": [{ "index": 0, "fields": { "direction": "去程", "airline": "...", "number": "...", "from": "...", "to": "...", "date": "...", "arrivalDate": "...", "depart": "...", "arrive": "...", "terminal": "...", "note": "..." } }],
+    "add": [],
+    "delete": []
+  },
+  "weather": {
+    "modify": [{ "index": 0, "fields": { "title": "...", "tag": "", "links": [{ "label": "...", "url": "..." }], "note": "" } }],
+    "add": [],
+    "delete": []
+  },
+  "info": {
+    "mapUrl": "選填",
+    "links": { "modify": [], "add": [], "delete": [] },
+    "emergency": { "modify": [], "add": [], "delete": [] },
+    "resv": { "modify": [], "add": [], "delete": [] }
+  },
+  "budget": {
+    "add_cats": [],
+    "add_active": [],
+    "custom_rates": {},
+    "modify_entries": [{ "key": "f:0", "fields": { "cat": "機票", "cu": "HKD", "a": 6622, "p": true } }],
+    "modify_manual": [],
+    "add_manual": [{ "cat": "其他", "nm": "...", "cu": "EUR", "a": 20, "p": false }],
+    "delete_manual": []
+  },
+  "top_modify": {}
+}</pre>
+      </details>
+
+      <div id="patchError"></div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="card hidden" id="step4Card">
+      <div class="step-header">
+        <span class="step-badge green">4</span>
+        <div>
+          <h2 class="step-title">差異預覽與 9/9 驗收結果</h2>
+          <div class="step-sub">確認下方每筆異動都符合預期，再套用或下載新檔</div>
+        </div>
+      </div>
+
+      <div id="verifyBanner"></div>
+      <div class="checks-wrap" id="checksWrap"></div>
+      <div class="diff-section" id="diffContainer"></div>
+
+      <div id="deleteConfirmWrap" class="delete-confirm-box hidden">
+        <label>
+          <input type="checkbox" id="chkConfirmDelete">
+          <span id="deleteConfirmText">我已逐筆確認要永久刪除上述項目</span>
+        </label>
+      </div>
+
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="button" class="btn-success" id="btnApplyAndDownload">✅ 套用並下載新 JSON</button>
+        <button type="button" class="btn-outline" id="btnApplyOnly">📌 僅套用（繼續下一輪修改）</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- =====================================================================
+       MODE 2: CREATE NEW TRIP FROM EXISTING TEMPLATE JSON (6/6 VERIFICATION)
+       ===================================================================== -->
+  <div id="newModeView" class="hidden">
+
+    <!-- NEW STEP 1 -->
+    <section class="card" id="newStep1Card">
+      <div class="step-header">
+        <span class="step-badge teal">1</span>
+        <div>
+          <h2 class="step-title">載入任一舊旅程 JSON 當格式範本</h2>
+          <div class="step-sub">只擷取網站欄位結構與型別，自動清空舊行程、舊圖片與舊筆記，絕不殘留</div>
+        </div>
+      </div>
+
+      <div class="file-drop teal" id="tplFileDrop">
+        <input type="file" id="tplFileInput" accept=".json,application/json">
+        <div class="icon">🗂️</div>
+        <div class="label" id="tplFileDropLabel">點此選擇任一份舊旅程 .json（作為格式範本）</div>
+        <div class="hint">檔案不離開手機瀏覽器，所有舊行程與 Base64 圖片都會自動淨空</div>
+      </div>
+
+      <div class="btn-row hidden" id="reuseFromPatchWrap">
+        <button type="button" class="btn-outline-teal" id="btnReuseFromPatch">🔗 直接沿用「修補模式」已載入的範本檔</button>
+      </div>
+
+      <div id="tplAlert"></div>
+
+      <div id="tplSummaryWrap" class="hidden">
+        <div class="metrics-grid" id="tplMetricsGrid"></div>
+      </div>
+    </section>
+
+    <!-- NEW STEP 2 -->
+    <section class="card disabled" id="newStep2Card">
+      <div class="step-header">
+        <span class="step-badge teal">2</span>
+        <div>
+          <h2 class="step-title">設定新旅程日期並複製 AI 提示詞</h2>
+          <div class="step-sub">填好名稱與起訖日，複製提示詞貼給 AI 幫你規劃或整理新行程</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label for="newTripTitle">新旅程名稱（destination / 頁首標題）</label>
+          <input type="text" id="newTripTitle" placeholder="例如：2027 北海道慢旅">
+        </div>
+        <div class="form-group">
+          <label for="newStartDate">出發日期（D1）</label>
+          <input type="date" id="newStartDate">
+        </div>
+        <div class="form-group">
+          <label for="newEndDate">回程日期（最後一天）</label>
+          <input type="date" id="newEndDate">
+        </div>
+      </div>
+
+      <div id="newDateSummary" class="date-summary-bar hidden"></div>
+      <div id="newDateError"></div>
+
+      <div id="extraTopFieldsBox" class="top-fields-box hidden">
+        <div class="box-title">其他頂層欄位處理（預設清空舊旅程資料，可勾選沿用如行李分類／購物分類）</div>
+        <div id="extraTopFieldsList"></div>
+      </div>
+
+      <div class="btn-row" style="margin-top:12px;">
+        <button type="button" class="btn-teal" id="btnCopyNewTripPrompt">📋 複製「新建旅程專用 AI 提示詞」</button>
+        <button type="button" class="btn-outline-teal" id="btnBuildEmptyShell">📄 直接產生空白骨架檔</button>
+      </div>
+
+      <details>
+        <summary>檢視從範本推斷出的欄位與合法 kind（點擊展開）</summary>
+        <pre class="code-preview" id="tplSchemaPreview"></pre>
+      </details>
+    </section>
+
+    <!-- NEW STEP 3 -->
+    <section class="card disabled" id="newStep3Card">
+      <div class="step-header">
+        <span class="step-badge teal">3</span>
+        <div>
+          <h2 class="step-title">貼上 AI 整理好的新行程 JSON</h2>
+          <div class="step-sub">自動生成全新 8 碼 ID、補齊原網站必備欄位，並執行 6/6 強制驗收</div>
+        </div>
+      </div>
+
+      <textarea class="teal" id="newTripInput" placeholder='貼上 AI 輸出的新行程 JSON，例如：
+{
+  "days": [
+    {
+      "date": "2027-05-01",
+      "title": "D1 抵達・老城散步",
+      "note": "",
+      "events": [
+        { "kind": "", "fields": { "time": "14:00", "title": "飯店寄放行李" }, "memo_html": "<p>備註</p>" }
+      ]
+    }
+  ]
+}'></textarea>
+
+      <div class="toggle-row teal">
+        <label>
+          <input type="checkbox" id="optAutoSortNewTrip" checked>
+          <span>自動依時間（HH:MM）排序每日活動（參考卡留原位）</span>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-teal" id="btnPreviewNewTrip">🔍 驗證並預覽新旅程</button>
+        <button type="button" class="btn-secondary" id="btnPasteNewClip">📥 貼上剪貼簿</button>
+        <button type="button" class="btn-secondary btn-sm" id="btnClearNewTrip">清空</button>
+      </div>
+
+      <div id="newTripError"></div>
+    </section>
+
+    <!-- NEW STEP 4 -->
+    <section class="card hidden" id="newStep4Card">
+      <div class="step-header">
+        <span class="step-badge green">4</span>
+        <div>
+          <h2 class="step-title">新旅程預覽與 6/6 驗收結果</h2>
+          <div class="step-sub">確認所有天數、活動與欄位無誤，即可下載匯入原網站</div>
+        </div>
+      </div>
+
+      <div id="newVerifyBanner"></div>
+      <div class="checks-wrap" id="newChecksWrap"></div>
+      <div id="newWarningsWrap"></div>
+      <div class="diff-section" id="newPreviewContainer"></div>
+
+      <div class="btn-row" style="margin-top:14px;">
+        <button type="button" class="btn-success" id="btnDownloadNewTrip">✅ 下載新旅程 JSON</button>
+        <button type="button" class="btn-outline" id="btnLoadIntoPatchMode">🔧 載入到「修補模式」繼續補充購物／待辦</button>
+      </div>
+    </section>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   旅のノート (Travel Notes) Deterministic Patch & New-Trip Engine v3
+   Aligned 100% with index.html (v 2026.11.23-d) schema & invariants:
+   - Mode 1: All sections (days, shopping, luggage, todos, backups,
+             accommodations+stay, flights, weather, info, budget, top_modify)
+             with 9/9 mandatory verification checkpoints
+   - Mode 2: Template-driven New Trip Builder with 6/6 mandatory checkpoints
+   ========================================================================= */
+const ItineraryEngine = (() => {
+  const IMG_RE_GLOBAL = /data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g;
+  const LINK_PATTERNS = ["shortcuts://", "maps.app.goo.gl"];
+  const TIME_RE = /^(\d{1,2}):(\d{2})$/;
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const ID_RE = /^[a-z0-9]{8}$/;
+
+  const FORBIDDEN_EVENT_EDIT_KEYS = new Set(["id", "image", "memo", "dayDate"]);
+  const FORBIDDEN_DAY_EDIT_KEYS = new Set(["id", "date", "events"]);
+  const FORBIDDEN_SHOP_EDIT_KEYS = new Set(["id", "image", "memo"]);
+  const FORBIDDEN_ITEM_EDIT_KEYS = new Set(["id", "memo"]);
+
+  // Native enums directly from user's index.html
+  const NATIVE_EVENT_KINDS = ["", "景點", "餐廳", "咖啡店", "購物", "住宿", "活動"];
+  const NATIVE_BACKUP_KINDS = ["", "餐廳", "景點", "咖啡店", "購物", "活動", "其他"];
+  const NATIVE_RESV_CATS = ["住宿", "交通", "餐廳", "活動", "其他"];
+  const NATIVE_FLIGHT_DIRECTIONS = ["去程", "回程", "轉機", "其他"];
+
+  const SHOPPING_FIELDS = new Set(["text", "category", "done", "dayDate", "place", "url", "note"]);
+  const LUGGAGE_FIELDS = new Set(["text", "category", "done"]);
+  const TODO_FIELDS = new Set(["text", "done"]);
+  const ACCOMM_FIELDS = new Set(["name", "address", "mapUrl", "checkin", "checkout", "booking", "contact", "note", "dayDate"]);
+  const BACKUP_ITEM_FIELDS = new Set(["title", "kind", "hours", "address", "mapUrl", "link", "note", "used"]);
+  const FLIGHT_FIELDS = new Set(["direction", "airline", "number", "from", "to", "date", "arrivalDate", "depart", "arrive", "terminal", "note"]);
+  const WEATHER_FIELDS = new Set(["title", "tag", "links", "note"]);
+  const INFO_LINK_FIELDS = new Set(["title", "sub", "url", "must"]);
+  const INFO_EM_FIELDS = new Set(["title", "body", "note"]);
+  const INFO_RESV_FIELDS = new Set(["cat", "title", "sub", "no", "url"]);
+  const BUDGET_ENTRY_FIELDS = new Set(["cat", "cu", "a", "p", "nm"]);
+  const BUDGET_MANUAL_FIELDS = new Set(["cat", "nm", "cu", "a", "p"]);
+
+  const TOTAL_PATCH_CHECKS = 9;
+  const TOTAL_NEW_CHECKS = 6;
+
+  // --- Pure-JS Synchronous SHA-256 ---
+  function sha256(str) {
+    const bytes = utf8ToBytes(str);
+    const K = [
+      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    ];
+    let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+    let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+
+    const len = bytes.length;
+    const bitLenHi = Math.floor(len / 0x20000000);
+    const bitLenLo = (len << 3) >>> 0;
+    const totalLen = ((len + 9 + 63) >> 6) << 6;
+    const buf = new Uint8Array(totalLen);
+    buf.set(bytes);
+    buf[len] = 0x80;
+    const view = new DataView(buf.buffer);
+    view.setUint32(totalLen - 8, bitLenHi, false);
+    view.setUint32(totalLen - 4, bitLenLo, false);
+
+    const w = new Int32Array(64);
+    for (let offset = 0; offset < totalLen; offset += 64) {
+      for (let i = 0; i < 16; i++) w[i] = view.getInt32(offset + i * 4, false);
+      for (let i = 16; i < 64; i++) {
+        const s0 = (rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3));
+        const s1 = (rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10));
+        w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0;
+      }
+      let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+      for (let i = 0; i < 64; i++) {
+        const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+        const ch = (e & f) ^ (~e & g);
+        const temp1 = (h + S1 + ch + K[i] + w[i]) | 0;
+        const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+        const maj = (a & b) ^ (a & c) ^ (b & c);
+        const temp2 = (S0 + maj) | 0;
+        h = g; g = f; f = e; e = (d + temp1) | 0;
+        d = c; c = b; b = a; a = (temp1 + temp2) | 0;
+      }
+      h0 = (h0 + a) | 0; h1 = (h1 + b) | 0; h2 = (h2 + c) | 0; h3 = (h3 + d) | 0;
+      h4 = (h4 + e) | 0; h5 = (h5 + f) | 0; h6 = (h6 + g) | 0; h7 = (h7 + h) | 0;
+    }
+    return [h0, h1, h2, h3, h4, h5, h6, h7]
+      .map(n => (n >>> 0).toString(16).padStart(8, "0"))
+      .join("");
+  }
+
+  function rotr(n, b) { return (n >>> b) | (n << (32 - b)); }
+
+  function utf8ToBytes(str) {
+    if (typeof TextEncoder !== "undefined") return new TextEncoder().encode(str);
+    const out = [];
+    for (let i = 0; i < str.length; i++) {
+      let c = str.charCodeAt(i);
+      if (c < 0x80) out.push(c);
+      else if (c < 0x800) out.push(0xc0 | (c >> 6), 0x80 | (c & 0x3f));
+      else if (c >= 0xd800 && c <= 0xdbff && i + 1 < str.length) {
+        const c2 = str.charCodeAt(++i);
+        const cp = 0x10000 + (((c & 0x3ff) << 10) | (c2 & 0x3ff));
+        out.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 0x3f), 0x80 | ((cp >> 6) & 0x3f), 0x80 | (cp & 0x3f));
+      } else out.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 0x3f), 0x80 | (c & 0x3f));
+    }
+    return new Uint8Array(out);
+  }
+
+  // --- Helpers ---
+  function assert(cond, msg) {
+    if (!cond) throw new Error(msg);
+  }
+
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function jsType(v) {
+    if (v === null) return "null";
+    if (Array.isArray(v)) return "array";
+    return typeof v;
+  }
+
+  function emptyDefaultFor(v) {
+    if (typeof v === "boolean") return false;
+    if (typeof v === "number") return 0;
+    if (typeof v === "string") return "";
+    if (Array.isArray(v)) return [];
+    if (v && typeof v === "object") return {};
+    return null;
+  }
+
+  function deepEqual(a, b) {
+    if (Object.is(a, b)) return true;
+    if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (!deepEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    const ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (const k of ka) {
+      if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+      if (!deepEqual(a[k], b[k])) return false;
+    }
+    return true;
+  }
+
+  function changedKeys(a, b, skipSet = new Set()) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    const diff = new Set();
+    for (const k of keys) {
+      if (skipSet.has(k)) continue;
+      const inA = Object.prototype.hasOwnProperty.call(a, k);
+      const inB = Object.prototype.hasOwnProperty.call(b, k);
+      if (inA !== inB || !deepEqual(a[k], b[k])) diff.add(k);
+    }
+    return diff;
+  }
+
+  function collectStrings(obj, out = []) {
+    if (typeof obj === "string") out.push(obj);
+    else if (Array.isArray(obj)) {
+      for (const item of obj) collectStrings(item, out);
+    } else if (obj && typeof obj === "object") {
+      for (const v of Object.values(obj)) collectStrings(v, out);
+    }
+    return out;
+  }
+
+  function countSubstring(str, sub) {
+    let count = 0, pos = 0;
+    while ((pos = str.indexOf(sub, pos)) !== -1) {
+      count++;
+      pos += sub.length;
+    }
+    return count;
+  }
+
+  function imgCounter(obj) {
+    const counts = new Map();
+    let marker = 0;
+    let total = 0;
+    for (const s of collectStrings(obj)) {
+      marker += countSubstring(s, "data:image/");
+      IMG_RE_GLOBAL.lastIndex = 0;
+      let m;
+      while ((m = IMG_RE_GLOBAL.exec(s)) !== null) {
+        const h = sha256(m[0]);
+        counts.set(h, (counts.get(h) || 0) + 1);
+        total++;
+      }
+    }
+    return { counts, marker, total };
+  }
+
+  function linkCounts(obj) {
+    const all = collectStrings(obj).join("\n");
+    const res = {};
+    for (const p of LINK_PATTERNS) res[p] = countSubstring(all, p);
+    return res;
+  }
+
+  function allEvents(doc) {
+    const out = [];
+    for (const d of doc.days || []) {
+      for (const e of d.events || []) out.push(e);
+    }
+    return out;
+  }
+
+  function eventsById(doc) {
+    const map = new Map();
+    for (const d of doc.days || []) {
+      for (const e of d.events || []) map.set(e.id, { date: d.date, event: e });
+    }
+    return map;
+  }
+
+  function collectAllIds(doc) {
+    const used = new Set();
+    const add = (v) => { if (typeof v === "string" && v) used.add(v); };
+    add(doc.id);
+    for (const d of doc.days || []) {
+      add(d.id);
+      for (const e of d.events || []) add(e.id);
+    }
+    for (const t of doc.todos || []) add(t.id);
+    for (const l of doc.luggage || []) add(l.id);
+    for (const s of doc.shopping || []) add(s.id);
+    for (const a of doc.accommodations || []) add(a.id);
+    if (doc.stay) add(doc.stay.id);
+    for (const bl of doc.backups || []) {
+      add(bl.id);
+      for (const bi of bl.items || []) add(bi.id);
+    }
+    if (doc.info && typeof doc.info === "object") {
+      for (const k of ["links", "emergency", "resv"]) {
+        for (const it of doc.info[k] || []) add(it.id);
+      }
+    }
+    if (doc.budget && Array.isArray(doc.budget.manual)) {
+      for (const m of doc.budget.manual) add(m.id);
+    }
+    return used;
+  }
+
+  function genId(usedSet, length = 8, prefix = "") {
+    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+    while (true) {
+      let cand = prefix;
+      for (let i = 0; i < length; i++) {
+        cand += chars[Math.floor(Math.random() * chars.length)];
+      }
+      if (!usedSet.has(cand)) {
+        usedSet.add(cand);
+        return cand;
+      }
+    }
+  }
+
+  function buildSchema(doc) {
+    const evs = allEvents(doc);
+    const types = new Map();
+    for (const e of evs) {
+      for (const [k, v] of Object.entries(e)) {
+        if (!types.has(k)) types.set(k, new Set());
+        types.get(k).add(jsType(v));
+      }
+    }
+    let baseKeys = new Set();
+    if (evs.length > 0) {
+      baseKeys = new Set(Object.keys(evs[0]));
+      for (let i = 1; i < evs.length; i++) {
+        const cur = new Set(Object.keys(evs[i]));
+        for (const k of [...baseKeys]) {
+          if (!cur.has(k)) baseKeys.delete(k);
+        }
+      }
+    }
+    // Union of native index.html KIND_KEY values + any existing kind in origDoc
+    const validKinds = new Set(NATIVE_EVENT_KINDS);
+    for (const e of evs) validKinds.add(e.kind !== undefined ? e.kind : "");
+
+    const dayTypes = new Map();
+    for (const d of doc.days || []) {
+      for (const [k, v] of Object.entries(d)) {
+        if (!dayTypes.has(k)) dayTypes.set(k, new Set());
+        dayTypes.get(k).add(jsType(v));
+      }
+    }
+    // Also allow optional outline & note fields natively used by index.html
+    if (!dayTypes.has("note")) dayTypes.set("note", new Set(["string"]));
+    if (!dayTypes.has("outline")) dayTypes.set("outline", new Set(["string"]));
+
+    return { types, baseKeys, validKinds, dayTypes };
+  }
+
+  function nextVersionFilename(srcName) {
+    const dotIdx = srcName.lastIndexOf(".");
+    const base = dotIdx > 0 ? srcName.slice(0, dotIdx) : srcName;
+    const ext = dotIdx > 0 ? srcName.slice(dotIdx) : ".json";
+    const m = base.match(/_updated(?:_v(\d+))?$/);
+    if (m) {
+      const nextV = parseInt(m[1] || "1", 10) + 1;
+      return `${base.slice(0, m.index)}_updated_v${nextV}${ext}`;
+    }
+    return `${base}_updated${ext}`;
+  }
+
+  function sanitizeFilename(title) {
+    const clean = (title || "新旅程")
+      .trim()
+      .replace(/[\\/:*?"<>|]+/g, "_")
+      .replace(/\s+/g, "_");
+    return `${clean || "new_trip"}.json`;
+  }
+
+  function validateTimeStr(timeStr, label = "") {
+    if (timeStr === "") return;
+    assert(typeof timeStr === "string" && TIME_RE.test(timeStr),
+      `${label} 的 time 格式不是 HH:MM：${JSON.stringify(timeStr)}`);
+    const m = timeStr.match(TIME_RE);
+    const hh = parseInt(m[1], 10);
+    const mm = parseInt(m[2], 10);
+    assert(hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59,
+      `${label} 的 time 超出有效時間範圍 (00:00–23:59)：${JSON.stringify(timeStr)}`);
+  }
+
+  function expandDateRange(startStr, endStr) {
+    assert(DATE_RE.test(startStr) && DATE_RE.test(endStr), "起訖日期必須為 YYYY-MM-DD 格式");
+    const [sy, sm, sd] = startStr.split("-").map(Number);
+    const [ey, em, ed] = endStr.split("-").map(Number);
+    const startUtc = Date.UTC(sy, sm - 1, sd);
+    const endUtc = Date.UTC(ey, em - 1, ed);
+    assert(!Number.isNaN(startUtc) && !Number.isNaN(endUtc), "無效的日期值");
+    assert(endUtc >= startUtc, "回程日期不可早於出發日期");
+
+    const days = [];
+    const cur = new Date(startUtc);
+    while (cur.getTime() <= endUtc) {
+      const y = cur.getUTCFullYear();
+      const m = String(cur.getUTCMonth() + 1).padStart(2, "0");
+      const d = String(cur.getUTCDate()).padStart(2, "0");
+      days.push(`${y}-${m}-${d}`);
+      cur.setUTCDate(cur.getUTCDate() + 1);
+      assert(days.length <= 90, "單趟旅程天數上限為 90 天，請確認起訖年份是否輸入錯誤");
+    }
+    return days;
+  }
+
+  function inspectDoc(doc, byteSize = 0) {
+    assert(doc && typeof doc === "object" && !Array.isArray(doc), "JSON 根節點必須是物件");
+    assert(Array.isArray(doc.days), "JSON 缺少 days 陣列");
+    for (let i = 0; i < doc.days.length; i++) {
+      const d = doc.days[i];
+      assert(d && typeof d === "object" && typeof d.date === "string" && Array.isArray(d.events),
+        `第 ${i + 1} 天的格式異常（缺少 date 或 events）`);
+    }
+    const evs = allEvents(doc);
+    const idSet = new Set(evs.map(e => e.id));
+    assert(idSet.size === evs.length, "原檔內存在重複的 event id，請先檢查原檔");
+
+    const img = imgCounter(doc);
+    assert(img.marker === img.total,
+      `原檔本身含非標準 data:image 字串（data:image/ 出現 ${img.marker} 次，標準 Base64 僅 ${img.total} 筆）。已中止以策安全。`);
+
+    const links = linkCounts(doc);
+    const refCards = evs.filter(e => e.time === "").length;
+    const schema = buildSchema(doc);
+
+    const backupItemsCount = (doc.backups || []).reduce((acc, bl) => acc + (bl.items ? bl.items.length : 0), 0);
+    const infoObj = doc.info && typeof doc.info === "object" ? doc.info : {};
+    const infoCount = (infoObj.links ? infoObj.links.length : 0) +
+      (infoObj.emergency ? infoObj.emergency.length : 0) +
+      (infoObj.resv ? infoObj.resv.length : 0);
+    const budgetObj = doc.budget && typeof doc.budget === "object" ? doc.budget : {};
+    const budgetCount = (budgetObj.entries ? Object.keys(budgetObj.entries).length : 0) +
+      (budgetObj.manual ? budgetObj.manual.length : 0);
+
+    return {
+      destination: doc.destination || doc.title || "未命名旅程",
+      title: doc.title || "",
+      start: doc.start || (doc.days[0] ? doc.days[0].date : ""),
+      end: doc.end || (doc.days[doc.days.length - 1] ? doc.days[doc.days.length - 1].date : ""),
+      daysCount: doc.days.length,
+      eventsCount: evs.length,
+      refCards,
+      base64Count: img.total,
+      shortcutsCount: links["shortcuts://"],
+      mapsCount: links["maps.app.goo.gl"],
+      shoppingCount: Array.isArray(doc.shopping) ? doc.shopping.length : 0,
+      luggageCount: Array.isArray(doc.luggage) ? doc.luggage.length : 0,
+      todosCount: Array.isArray(doc.todos) ? doc.todos.length : 0,
+      backupsListsCount: Array.isArray(doc.backups) ? doc.backups.length : 0,
+      backupsItemsCount: backupItemsCount,
+      accommodationsCount: Array.isArray(doc.accommodations) ? doc.accommodations.length : 0,
+      flightsCount: Array.isArray(doc.flights) ? doc.flights.length : 0,
+      weatherCount: Array.isArray(doc.weather) ? doc.weather.length : 0,
+      infoCount,
+      budgetCount,
+      byteSize,
+      validKinds: [...schema.validKinds],
+      schema
+    };
+  }
+
+  function stripHtmlToText(html) {
+    if (typeof html !== "string") return "";
+    return html
+      .replace(IMG_RE_GLOBAL, "[圖片]")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function summarizeMemoField(memo, includeMemoText) {
+    if (!memo || typeof memo !== "object") return null;
+    const rawHtml = memo.html || "";
+    const imgCount = (rawHtml.match(IMG_RE_GLOBAL) || []).length;
+    if (includeMemoText) {
+      const txt = stripHtmlToText(rawHtml);
+      const preview = txt.length > 100 ? txt.slice(0, 100) + "..." : txt;
+      return { key: "memo_summary", val: `${preview}${imgCount ? ` [含${imgCount}張圖]` : ""}` };
+    }
+    return { key: "has_memo", val: true };
+  }
+
+  function extractJsonBlock(rawText, label = "JSON") {
+    const trimmed = (rawText || "").trim();
+    assert(trimmed.length > 0, `請先貼上 AI 產出的 ${label}`);
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      assert(parsed && typeof parsed === "object" && !Array.isArray(parsed), `${label} 根節點必須是物件 {}`);
+      return parsed;
+    } catch (_) {}
+
+    const blocks = [];
+    const fenceRe = /```(?:json)?\s*([\s\S]*?)```/gi;
+    let m;
+    while ((m = fenceRe.exec(trimmed)) !== null) {
+      try {
+        const obj = JSON.parse(m[1].trim());
+        if (obj && typeof obj === "object" && !Array.isArray(obj)) blocks.push(obj);
+      } catch (_) {}
+    }
+    if (blocks.length === 1) return blocks[0];
+    if (blocks.length > 1) {
+      throw new Error(`偵測到 ${blocks.length} 個 JSON 程式碼區塊，請只貼上「單一」區塊以避免誤套用。`);
+    }
+    throw new Error("無法解析 JSON 格式，請確認貼上的內容完整且括號、逗號正確。");
+  }
+
+  function reorderByTime(day) {
+    const slots = [];
+    const timed = [];
+    for (let i = 0; i < day.events.length; i++) {
+      const e = day.events[i];
+      if ((e.time || "") !== "") {
+        validateTimeStr(e.time, `${e.id}（${e.title || "未命名"}）`);
+        slots.push(i);
+        timed.push(e);
+      }
+    }
+    timed.sort((a, b) => {
+      const ma = a.time.match(TIME_RE);
+      const mb = b.time.match(TIME_RE);
+      return (parseInt(ma[1], 10) * 60 + parseInt(ma[2], 10)) - (parseInt(mb[1], 10) * 60 + parseInt(mb[2], 10));
+    });
+    for (let k = 0; k < slots.length; k++) {
+      day.events[slots[k]] = timed[k];
+    }
+  }
+
+  function makeEventFromSchema(templateDoc, usedIds, dayDate, kind, fields, memoHtml) {
+    const existing = allEvents(templateDoc);
+    assert(existing.length > 0, "範本檔至少需包含 1 筆活動，才能自動推斷原網站欄位格式");
+    const { validKinds } = buildSchema(templateDoc);
+    assert(validKinds.has(kind),
+      `不支援的 kind 值：${JSON.stringify(kind)}（合法值：${[...validKinds].map(k => JSON.stringify(k)).join("、")}）`);
+
+    const sameKind = existing.filter(e => (e.kind !== undefined ? e.kind : "") === kind);
+    const pool = sameKind.length > 0 ? sameKind : existing;
+    let sample = pool[0];
+    for (const cand of pool) {
+      const candLen = Object.keys(cand).filter(k => k !== "memo").length;
+      const sampleLen = Object.keys(sample).filter(k => k !== "memo").length;
+      if (candLen > sampleLen) sample = cand;
+    }
+
+    const newEv = {};
+    for (const [k, v] of Object.entries(sample)) {
+      if (k === "memo") continue;
+      newEv[k] = emptyDefaultFor(v);
+    }
+
+    newEv.id = genId(usedIds, 8);
+    newEv.dayDate = dayDate;
+    newEv.kind = kind;
+
+    if (fields && typeof fields === "object") {
+      for (const forbidden of ["id", "dayDate", "image", "memo"]) {
+        assert(!Object.prototype.hasOwnProperty.call(fields, forbidden),
+          `新增活動的 fields 不可直接設定 ${forbidden}（筆記請填 memo_html）`);
+      }
+      Object.assign(newEv, fields);
+    }
+
+    if (typeof memoHtml === "string" && memoHtml.length > 0) {
+      newEv.memo = { title: "筆記", html: memoHtml };
+    }
+    return newEv;
+  }
+
+  function applyAppendMemo(obj, idLabel, appendHtml, createIfMissing) {
+    if (!obj.memo) {
+      assert(createIfMissing === true,
+        `${idLabel} 原本沒有筆記，需明確設定 "create_memo_if_missing": true 才可新建`);
+      obj.memo = { title: "筆記", html: appendHtml };
+      return { created: true, html: appendHtml };
+    }
+    obj.memo.html = (obj.memo.html || "") + appendHtml;
+    return { created: false, html: appendHtml };
+  }
+
+  function verifyMemoAppendOnly(origObj, newObj, label) {
+    const hadMemo = Object.prototype.hasOwnProperty.call(origObj, "memo") && origObj.memo !== null;
+    const hasMemo = Object.prototype.hasOwnProperty.call(newObj, "memo") && newObj.memo !== null;
+    assert(!(hadMemo && !hasMemo), `${label} 原有 memo 被移除`);
+    if (hadMemo && hasMemo) {
+      assert(newObj.memo.title === origObj.memo.title, `${label} memo 標題被改`);
+      assert((newObj.memo.html || "").startsWith(origObj.memo.html || ""), `${label} 原有 memo 被覆蓋`);
+    }
+    if (!hadMemo && hasMemo) {
+      assert(typeof newObj.memo === "object" && typeof newObj.memo.title === "string" && typeof newObj.memo.html === "string",
+        `${label} 新建 memo 格式異常`);
+    }
+  }
+
+  // =========================================================================
+  // MODE 1: LIGHTWEIGHT VIEW & PROMPT (SELECTABLE SECTIONS)
+  // =========================================================================
+  function buildLightweightView(doc, { sections = ["days"], includeMemoText = true } = {}) {
+    const sel = new Set(sections);
+    const schema = buildSchema(doc);
+
+    const out = {
+      trip_meta: {
+        destination: doc.destination || "",
+        title: doc.title || "",
+        desc: doc.desc || "",
+        start: doc.start || "",
+        end: doc.end || ""
+      },
+      included_sections: [...sel]
+    };
+
+    if (sel.has("days")) {
+      out.valid_event_kinds = [...schema.validKinds];
+      out.event_fields = [...schema.types.keys()].filter(k => !FORBIDDEN_EVENT_EDIT_KEYS.has(k));
+      out.days = (doc.days || []).map((d, idx) => {
+        const dayOut = { dn: `D${idx + 1}`, id: d.id, date: d.date, title: d.title || "" };
+        if (d.note) dayOut.note = d.note;
+        if (d.outline) dayOut.outline = d.outline;
+        dayOut.events = (d.events || []).map((e, eIdx) => {
+          const evOut = { _idx: eIdx, id: e.id };
+          for (const [k, v] of Object.entries(e)) {
+            if (k === "id" || k === "dayDate") continue;
+            if (k === "image") {
+              if (typeof v === "string" && v.length > 0) evOut.has_image = true;
+              continue;
+            }
+            if (k === "memo") {
+              const ms = summarizeMemoField(v, includeMemoText);
+              if (ms) evOut[ms.key] = ms.val;
+              continue;
+            }
+            if (typeof v === "string") {
+              if (v === "") continue;
+              evOut[k] = v.includes("data:image/") ? "[含Base64圖片，已省略]" : v;
+            } else if (typeof v === "boolean") {
+              if (v) evOut[k] = true;
+            } else {
+              evOut[k] = v;
+            }
+          }
+          if (e.time === "") evOut.time = "";
+          return evOut;
+        });
+        return dayOut;
+      });
+    }
+
+    if (sel.has("shopping")) {
+      out.shoppingCategories = doc.shoppingCategories || [];
+      out.shopping = (doc.shopping || []).map(x => {
+        const item = { id: x.id, text: x.text || "", category: x.category || "", done: !!x.done };
+        if (x.place) item.place = x.place;
+        if (x.dayDate) item.dayDate = x.dayDate;
+        if (x.url) item.url = x.url;
+        if (x.note) item.note = x.note;
+        if (x.image) item.has_image = true;
+        const ms = summarizeMemoField(x.memo, includeMemoText);
+        if (ms) item[ms.key] = ms.val;
+        return item;
+      });
+    }
+
+    if (sel.has("luggage")) {
+      out.luggageCategories = doc.luggageCategories || [];
+      out.luggage = (doc.luggage || []).map(x => {
+        const item = { id: x.id, text: x.text || "", category: x.category || "", done: !!x.done };
+        const ms = summarizeMemoField(x.memo, includeMemoText);
+        if (ms) item[ms.key] = ms.val;
+        return item;
+      });
+    }
+
+    if (sel.has("todos")) {
+      out.todos = (doc.todos || []).map(x => {
+        const item = { id: x.id, text: x.text || "", done: !!x.done };
+        const ms = summarizeMemoField(x.memo, includeMemoText);
+        if (ms) item[ms.key] = ms.val;
+        return item;
+      });
+    }
+
+    if (sel.has("backups")) {
+      out.valid_backup_kinds = NATIVE_BACKUP_KINDS;
+      out.backups = (doc.backups || []).map(bl => ({
+        id: bl.id,
+        name: bl.name || "",
+        items: (bl.items || []).map(it => {
+          const item = { id: it.id, title: it.title || "" };
+          if (it.kind) item.kind = it.kind;
+          if (it.hours) item.hours = it.hours;
+          if (it.address) item.address = it.address;
+          if (it.mapUrl) item.mapUrl = it.mapUrl;
+          if (it.link) item.link = it.link;
+          if (it.note) item.note = it.note;
+          if (Array.isArray(it.used) && it.used.length) item.used = it.used;
+          const ms = summarizeMemoField(it.memo, includeMemoText);
+          if (ms) item[ms.key] = ms.val;
+          return item;
+        })
+      }));
+    }
+
+    if (sel.has("accommodations")) {
+      out.accommodations = (doc.accommodations || []).map(a => {
+        const item = { id: a.id, name: a.name || "" };
+        for (const k of ["address", "mapUrl", "checkin", "checkout", "booking", "contact", "note", "dayDate"]) {
+          if (a[k]) item[k] = a[k];
+        }
+        return item;
+      });
+    }
+
+    if (sel.has("flights_weather")) {
+      out.flights = (doc.flights || []).map((f, idx) => ({ _idx: idx, ...f }));
+      out.weather = (doc.weather || []).map((w, idx) => ({ _idx: idx, ...w }));
+    }
+
+    if (sel.has("info")) {
+      const inf = doc.info && typeof doc.info === "object" ? doc.info : { mapUrl: "", links: [], emergency: [], resv: [] };
+      out.valid_resv_cats = NATIVE_RESV_CATS;
+      out.info = {
+        mapUrl: inf.mapUrl || "",
+        links: inf.links || [],
+        emergency: inf.emergency || [],
+        resv: inf.resv || []
+      };
+    }
+
+    if (sel.has("budget")) {
+      const b = doc.budget && typeof doc.budget === "object" ? doc.budget : {};
+      out.budget = {
+        cats: b.cats || [],
+        active: b.active || [],
+        custom: b.custom || {},
+        entries: b.entries || {},
+        manual: b.manual || []
+      };
+    }
+
+    return out;
+  }
+
+  function buildAiPrompt(doc, opts) {
+    const light = buildLightweightView(doc, opts);
+    const sel = new Set(opts.sections || ["days"]);
+    const rules = [
+      "你是我的「旅のノート」旅遊 JSON 修改助手。請閱讀下方精簡資料，跟我確認需求後，**不要輸出完整 JSON**，只輸出一段符合格式的 **JSON Patch 指令**（用單一 ```json 程式碼區塊包住），我會貼回本地安全工具執行 9/9 自動驗收並合併回完整檔（含所有圖片與筆記）。",
+      "",
+      "【共用嚴格規則】",
+      "1. 絕對不要猜測 id，必須精確使用下方資料中的 8 碼 `id`（航班／天氣用 `_idx` 數字索引）。",
+      "2. 禁止在任何 `fields` 中修改 `id`、`image`、`memo`、`dayDate`（行程跨日搬移請用 `move`）。",
+      "3. 筆記（`memo`）只允許透過 `append_memo`（HTML 字串，如 `<p>...</p>`）追加；若原項目沒有筆記，須同時設 `\"create_memo_if_missing\": true` 才可新建。",
+      "4. 除非我明確同意刪除，否則各區塊的 `delete` 必須為空陣列 `[]`。未動到的區塊請省略。",
+      ""
+    ];
+
+    const schemaLines = ["{"];
+
+    if (sel.has("days")) {
+      const kindsStr = light.valid_event_kinds.map(k => JSON.stringify(k)).join("、");
+      rules.push(`【行程 days 規則】合法 kind：${kindsStr}（一般填 ""）；可填欄位：${light.event_fields.join(", ")}（字串不可填 null）。改時間／新增後若需依時間重排，把日期加入 reorder_dates（time 為空的參考卡會鎖定原位）。`);
+      schemaLines.push(
+        '  "modify": [{ "id": "活動id", "fields": { "time": "10:30" }, "append_memo": "<p>...</p>", "create_memo_if_missing": false }],',
+        '  "move": [{ "id": "活動id", "to_date": "YYYY-MM-DD", "insert_index": null }],',
+        '  "add": [{ "date": "YYYY-MM-DD", "kind": "", "insert_index": null, "fields": { "time": "14:00", "title": "..." }, "memo_html": "" }],',
+        '  "delete": [],',
+        '  "day_modify": [{ "date": "YYYY-MM-DD", "fields": { "title": "...", "note": "...", "outline": "..." } }],',
+        '  "reorder_dates": [],'
+      );
+    }
+
+    if (sel.has("shopping")) {
+      rules.push(`【購物 shopping 規則】既有分類：${(light.shoppingCategories || []).join("、")}（如需新分類先列入 add_categories）。嚴禁修改 image 欄位。可改欄位：text, category, done, dayDate, place, url, note。`);
+      schemaLines.push(
+        '  "shopping": { "add_categories": [], "modify": [{ "id": "...", "fields": { "text": "...", "place": "...", "note": "...", "done": false }, "append_memo": "", "create_memo_if_missing": false }], "add": [{ "text": "...", "category": "既有分類", "place": "", "url": "", "note": "", "dayDate": "", "done": false, "memo_html": "" }], "delete": [] },'
+      );
+    }
+
+    if (sel.has("luggage")) {
+      rules.push(`【行李 luggage 規則】既有分類：${(light.luggageCategories || []).join("、")}（如需新分類先列入 add_categories）。可改欄位：text, category, done。`);
+      schemaLines.push(
+        '  "luggage": { "add_categories": [], "modify": [{ "id": "...", "fields": { "text": "...", "category": "...", "done": true } }], "add": [{ "text": "...", "category": "既有分類", "done": false }], "delete": [] },'
+      );
+    }
+
+    if (sel.has("todos")) {
+      rules.push("【待辦 todos 規則】可改欄位：text, done；也支援 append_memo / memo_html。");
+      schemaLines.push(
+        '  "todos": { "modify": [{ "id": "...", "fields": { "text": "...", "done": true } }], "add": [{ "text": "...", "done": false }], "delete": [] },'
+      );
+    }
+
+    if (sel.has("backups")) {
+      rules.push(`【備用行程 backups 規則】合法 kind：${NATIVE_BACKUP_KINDS.map(k => JSON.stringify(k)).join("、")}。新增項目可用 list_id 或 list_name（可指同輪 add_lists 新建的清單名）。`);
+      schemaLines.push(
+        '  "backups": { "add_lists": [{ "name": "..." }], "rename_lists": [{ "id": "list_id", "name": "..." }], "delete_lists": [], "modify_items": [{ "id": "item_id", "fields": { "title": "...", "hours": "", "address": "", "mapUrl": "", "link": "", "note": "", "kind": "" }, "append_memo": "", "create_memo_if_missing": false }], "add_items": [{ "list_id": "...", "title": "...", "kind": "", "hours": "", "address": "", "mapUrl": "", "link": "", "note": "", "memo_html": "" }], "move_items": [{ "id": "item_id", "to_list_id": "..." }], "delete_items": [] },'
+      );
+    }
+
+    if (sel.has("accommodations")) {
+      rules.push("【住宿 accommodations 規則】可改欄位：name, address, mapUrl, checkin, checkout, booking, contact, note, dayDate（系統會自動同步 stay 與第一筆住宿）。");
+      schemaLines.push(
+        '  "accommodations": { "modify": [{ "id": "...", "fields": { "name": "...", "booking": "...", "note": "..." } }], "add": [{ "name": "...", "address": "", "mapUrl": "", "checkin": "YYYY-MM-DD", "checkout": "YYYY-MM-DD", "booking": "", "contact": "", "note": "", "dayDate": "YYYY-MM-DD" }], "delete": [] },'
+      );
+    }
+
+    if (sel.has("flights_weather")) {
+      rules.push(`【航班與天氣規則】以 0 起算的 index 定位。航班 direction 建議：${NATIVE_FLIGHT_DIRECTIONS.join("、")}。`);
+      schemaLines.push(
+        '  "flights": { "modify": [{ "index": 0, "fields": { "airline": "...", "number": "...", "depart": "...", "arrive": "...", "terminal": "...", "note": "..." } }], "add": [], "delete": [] },',
+        '  "weather": { "modify": [{ "index": 0, "fields": { "title": "...", "tag": "", "links": [{ "label": "...", "url": "..." }], "note": "" } }], "add": [], "delete": [] },'
+      );
+    }
+
+    if (sel.has("info")) {
+      rules.push(`【旅程資訊 info 規則】resv 合法 cat：${NATIVE_RESV_CATS.join("、")}。links 的 must 為布林值（true 會顯示為頂部大卡片）。`);
+      schemaLines.push(
+        '  "info": { "mapUrl": "選填", "links": { "modify": [], "add": [{ "title": "...", "sub": "", "url": "", "must": false }], "delete": [] }, "emergency": { "modify": [], "add": [{ "title": "...", "body": "...", "note": "" }], "delete": [] }, "resv": { "modify": [], "add": [{ "cat": "交通", "title": "...", "sub": "", "no": "...", "url": "" }], "delete": [] } },'
+      );
+    }
+
+    if (sel.has("budget")) {
+      rules.push("【預算 budget 規則】modify_entries 用 key（如 \"f:0\"、\"a:id\"、\"e:id\"、\"s:id\"）更新金額 a（數字或 null）、貨幣 cu、已付 p（布林）、分類 cat。");
+      schemaLines.push(
+        '  "budget": { "add_cats": [], "add_active": [], "custom_rates": {}, "modify_entries": [{ "key": "...", "fields": { "cu": "EUR", "a": 100, "p": true } }], "modify_manual": [], "add_manual": [{ "cat": "其他", "nm": "...", "cu": "EUR", "a": 50, "p": false }], "delete_manual": [] },'
+      );
+    }
+
+    schemaLines.push('  "top_modify": {}');
+    schemaLines.push("}");
+
+    return [
+      ...rules,
+      "",
+      "【本輪可用 JSON Patch 格式】",
+      "```json",
+      ...schemaLines,
+      "```",
+      "",
+      "【目前精簡資料】",
+      "```json",
+      JSON.stringify(light, null, 2),
+      "```",
+      "",
+      "我接下來想調整的內容如下（請先確認並輸出 JSON Patch）："
+    ].join("\n");
+  }
+
+  // =========================================================================
+  // MODE 1: APPLY PATCH & 9/9 STRICT AUTOMATED VERIFICATION
+  // =========================================================================
+  function applyAndVerify(origDoc, patchRaw) {
+    const patch = typeof patchRaw === "string" ? extractJsonBlock(patchRaw, "JSON 修改指令") : patchRaw;
+    assert(patch && typeof patch === "object" && !Array.isArray(patch), "修補指令必須是物件");
+
+    const allowedPatchKeys = new Set([
+      "modify", "move", "add", "delete", "day_modify", "reorder_dates", "top_modify",
+      "shopping", "luggage", "todos", "backups", "accommodations", "flights", "weather", "info", "budget"
+    ]);
+    for (const k of Object.keys(patch)) {
+      assert(allowedPatchKeys.has(k), `修補指令包含不支援的頂層鍵："${k}"`);
+    }
+
+    const origEventsMap = eventsById(origDoc);
+    const origDates = new Set((origDoc.days || []).map(d => d.date));
+    const dnByDate = new Map((origDoc.days || []).map((d, i) => [d.date, `D${i + 1}`]));
+    const { types: EV_SCHEMA, baseKeys: BASE_KEYS, validKinds: VALID_KINDS, dayTypes: DAY_SCHEMA } = buildSchema(origDoc);
+
+    // Tracking state for 9/9 verification
+    const TOUCHED_TOP_KEYS = new Set();
+    const TOUCHED_DATES = new Set();
+    const MODIFY = new Map();
+    const DAY_MODIFY = new Map();
+    const ADD = new Set();
+    const DELETE = new Set();
+    const MOVE = new Set();
+    const ALLOW_REORDER_DATES = new Set();
+
+    // Extra-section tracking & authorized deleted objects (for Base64 & link checks)
+    const sectionTrack = {};
+    const deletedObjects = [];
+
+    const data = deepClone(origDoc);
+    const usedIds = collectAllIds(data);
+
+    const dayOf = (date) => {
+      const m = data.days.filter(d => d.date === date);
+      assert(m.length === 1, `日期 ${JSON.stringify(date)} 匹配 ${m.length} 筆（必須唯一）`);
+      return m[0];
+    };
+    const evInDay = (day, id) => {
+      const m = day.events.filter(e => e.id === id);
+      assert(m.length === 1, `活動 ${id} 在 ${day.date} 匹配 ${m.length} 筆（必須唯一）`);
+      return m[0];
+    };
+
+    const diff = {
+      topModify: [],
+      dayModify: [],
+      modify: [],
+      move: [],
+      add: [],
+      delete: [],
+      reorder: [],
+      sections: [] // { sectionKey, sectionLabel, adds: [], modifies: [], deletes: [], moves: [], meta: [] }
+    };
+
+    // ----- A. top_modify -----
+    const topModify = patch.top_modify || {};
+    assert(topModify && typeof topModify === "object" && !Array.isArray(topModify), "top_modify 必須是物件");
+    const MANAGED_SECTION_KEYS = new Set([
+      "days", "shopping", "shoppingCategories", "luggage", "luggageCategories",
+      "todos", "backups", "accommodations", "stay", "flights", "weather", "info", "budget"
+    ]);
+    for (const [k, v] of Object.entries(topModify)) {
+      assert(!MANAGED_SECTION_KEYS.has(k), `禁止透過 top_modify 整塊覆寫 ${k}，請使用專屬區塊指令`);
+      assert(Object.prototype.hasOwnProperty.call(origDoc, k), `top_modify 包含原檔不存在的頂層欄位：${k}`);
+      TOUCHED_TOP_KEYS.add(k);
+      diff.topModify.push({ key: k, oldVal: origDoc[k], newVal: v });
+      data[k] = v;
+    }
+
+    // ----- B. days / events (v1/v2 full logic) -----
+    const modifyList = patch.modify || [];
+    const moveList = patch.move || [];
+    const addList = patch.add || [];
+    const deleteList = patch.delete || [];
+    const dayModifyList = patch.day_modify || [];
+    const reorderDatesList = patch.reorder_dates || [];
+
+    assert(Array.isArray(modifyList), "modify 必須是陣列");
+    assert(Array.isArray(moveList), "move 必須是陣列");
+    assert(Array.isArray(addList), "add 必須是陣列");
+    assert(Array.isArray(deleteList), "delete 必須是陣列");
+    assert(Array.isArray(dayModifyList), "day_modify 必須是陣列");
+    assert(Array.isArray(reorderDatesList), "reorder_dates 必須是陣列");
+
+    for (const eid of deleteList) {
+      assert(typeof eid === "string" && origEventsMap.has(eid), `delete 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(!DELETE.has(eid), `delete 出現重複 id：${eid}`);
+      DELETE.add(eid);
+      TOUCHED_DATES.add(origEventsMap.get(eid).date);
+    }
+
+    for (const item of dayModifyList) {
+      assert(item && typeof item === "object" && typeof item.date === "string", "day_modify 項目缺少 date");
+      assert(origDates.has(item.date), `day_modify 含不存在的日期：${item.date}`);
+      assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+        `day_modify(${item.date}) 缺少 fields 物件`);
+      const day = dayOf(item.date);
+      const changes = [];
+      for (const [k, v] of Object.entries(item.fields)) {
+        assert(!FORBIDDEN_DAY_EDIT_KEYS.has(k), `禁止修改日的受保護欄位：${k}`);
+        assert(DAY_SCHEMA.has(k), `day_modify(${item.date}) 出現不支援的日欄位：${k}`);
+        assert(DAY_SCHEMA.get(k).has(jsType(v)), `day_modify(${item.date}) 欄位 "${k}" 型別不符`);
+        if (!DAY_MODIFY.has(item.date)) DAY_MODIFY.set(item.date, new Set());
+        DAY_MODIFY.get(item.date).add(k);
+        changes.push({ key: k, oldVal: day[k], newVal: v });
+        day[k] = v;
+      }
+      if (changes.length > 0) {
+        TOUCHED_DATES.add(item.date);
+        diff.dayModify.push({ date: item.date, dn: dnByDate.get(item.date), changes });
+      }
+    }
+
+    const seenModify = new Set();
+    for (const item of modifyList) {
+      assert(item && typeof item === "object" && typeof item.id === "string", "modify 項目缺少 id");
+      const eid = item.id;
+      assert(origEventsMap.has(eid), `modify 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(!DELETE.has(eid), `活動 ${eid} 同時出現在 modify 與 delete，請確認意圖`);
+      assert(!seenModify.has(eid), `modify 出現重複 id：${eid}`);
+      seenModify.add(eid);
+
+      const origInfo = origEventsMap.get(eid);
+      const day = dayOf(origInfo.date);
+      const ev = evInDay(day, eid);
+      const allowedSet = new Set();
+      const fieldChanges = [];
+
+      if (item.fields !== undefined) {
+        assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+          `modify(${eid}) 的 fields 必須是物件`);
+        for (const [k, v] of Object.entries(item.fields)) {
+          assert(!FORBIDDEN_EVENT_EDIT_KEYS.has(k),
+            `禁止在 modify(${eid}) 中直接修改 ${k}（筆記請用 append_memo，跨日請用 move）`);
+          assert(EV_SCHEMA.has(k), `modify(${eid}) 出現原檔從未有過的欄位：${k}`);
+          const vt = jsType(v);
+          assert(EV_SCHEMA.get(k).has(vt),
+            `modify(${eid}) 欄位 "${k}" 型別 ${vt} 不符原檔（允許：${[...EV_SCHEMA.get(k)].join("/")}）`);
+          if (k === "kind") {
+            assert(VALID_KINDS.has(v),
+              `modify(${eid}) 的 kind 值 ${JSON.stringify(v)} 不合法（允許：${[...VALID_KINDS].map(x => JSON.stringify(x)).join("、")}）`);
+          }
+          if (k === "time") validateTimeStr(v, `modify(${eid})`);
+          allowedSet.add(k);
+          if (!deepEqual(ev[k], v)) fieldChanges.push({ key: k, oldVal: ev[k], newVal: v });
+          ev[k] = v;
+        }
+      }
+
+      let memoAppended = null;
+      if (typeof item.append_memo === "string" && item.append_memo.length > 0) {
+        allowedSet.add("memo");
+        memoAppended = applyAppendMemo(ev, `活動 ${eid}（${ev.title || ""}）`, item.append_memo, item.create_memo_if_missing);
+      }
+
+      if (allowedSet.size > 0) {
+        MODIFY.set(eid, allowedSet);
+        TOUCHED_DATES.add(origInfo.date);
+        diff.modify.push({
+          id: eid,
+          date: origInfo.date,
+          dn: dnByDate.get(origInfo.date),
+          title: origInfo.event.title || "(無標題)",
+          fieldChanges,
+          memoAppended
+        });
+      }
+    }
+
+    const seenMove = new Set();
+    for (const item of moveList) {
+      assert(item && typeof item === "object" && typeof item.id === "string" && typeof item.to_date === "string",
+        "move 項目必須包含 id 與 to_date");
+      const eid = item.id;
+      assert(origEventsMap.has(eid), `move 含不存在的活動 id：${JSON.stringify(eid)}`);
+      assert(origDates.has(item.to_date), `move 的目標日期不存在：${item.to_date}`);
+      assert(!DELETE.has(eid), `活動 ${eid} 同時出現在 move 與 delete，請確認意圖`);
+      assert(!seenMove.has(eid), `move 出現重複 id：${eid}`);
+      seenMove.add(eid);
+
+      const srcDate = origEventsMap.get(eid).date;
+      assert(srcDate !== item.to_date, `move(${eid}) 來源日與目標日皆為 ${srcDate}（同日調順序請用 reorder_dates）`);
+
+      const srcDay = dayOf(srcDate);
+      const dstDay = dayOf(item.to_date);
+      const idx = srcDay.events.findIndex(e => e.id === eid);
+      assert(idx !== -1, `無法在 ${srcDate} 找到活動 ${eid}`);
+      const [ev] = srcDay.events.splice(idx, 1);
+      ev.dayDate = dstDay.date;
+
+      if (item.insert_index === null || item.insert_index === undefined) {
+        dstDay.events.push(ev);
+      } else {
+        assert(Number.isInteger(item.insert_index) && item.insert_index >= 0 && item.insert_index <= dstDay.events.length,
+          `move(${eid}) 的 insert_index 超出範圍：${item.insert_index}`);
+        dstDay.events.splice(item.insert_index, 0, ev);
+      }
+
+      MOVE.add(eid);
+      TOUCHED_DATES.add(srcDate);
+      TOUCHED_DATES.add(item.to_date);
+      diff.move.push({
+        id: eid,
+        title: ev.title || "(無標題)",
+        fromDate: srcDate,
+        fromDn: dnByDate.get(srcDate),
+        toDate: item.to_date,
+        toDn: dnByDate.get(item.to_date),
+        hasImage: Boolean(ev.image),
+        hasMemo: Boolean(ev.memo)
+      });
+    }
+
+    for (const eid of DELETE) {
+      const origInfo = origEventsMap.get(eid);
+      const day = dayOf(origInfo.date);
+      const idx = day.events.findIndex(e => e.id === eid);
+      assert(idx !== -1, `無法刪除不存在於 ${origInfo.date} 的活動 ${eid}`);
+      const [removed] = day.events.splice(idx, 1);
+      deletedObjects.push(removed);
+      diff.delete.push({
+        section: "行程活動",
+        id: eid,
+        meta: `${dnByDate.get(origInfo.date)} (${origInfo.date}) ・ id: ${eid}`,
+        title: `${removed.time ? removed.time + " " : "(參考卡) "}${removed.title || "(無標題)"}`,
+        hasMemo: Boolean(removed.memo),
+        imgCount: imgCounter(removed).total
+      });
+    }
+
+    for (const item of addList) {
+      assert(item && typeof item === "object" && typeof item.date === "string", "add 項目缺少 date");
+      assert(origDates.has(item.date), `add 含不存在的日期：${item.date}`);
+      const kind = item.kind !== undefined ? item.kind : "";
+      if (item.fields && Object.prototype.hasOwnProperty.call(item.fields, "time")) {
+        validateTimeStr(item.fields.time, `add(${item.date})`);
+      }
+      const newEv = makeEventFromSchema(origDoc, usedIds, item.date, kind, item.fields || {}, item.memo_html || "");
+      const day = dayOf(item.date);
+
+      if (item.insert_index === null || item.insert_index === undefined) {
+        day.events.push(newEv);
+      } else {
+        assert(Number.isInteger(item.insert_index) && item.insert_index >= 0 && item.insert_index <= day.events.length,
+          `add(${item.date}) 的 insert_index 超出範圍：${item.insert_index}`);
+        day.events.splice(item.insert_index, 0, newEv);
+      }
+
+      ADD.add(newEv.id);
+      TOUCHED_DATES.add(item.date);
+      diff.add.push({
+        id: newEv.id,
+        date: item.date,
+        dn: dnByDate.get(item.date),
+        kind,
+        time: newEv.time || "",
+        title: newEv.title || "(無標題)",
+        hasMemo: Boolean(newEv.memo),
+        fields: item.fields || {}
+      });
+    }
+
+    for (const date of reorderDatesList) {
+      assert(typeof date === "string" && origDates.has(date), `reorder_dates 含不存在的日期：${JSON.stringify(date)}`);
+      const day = dayOf(date);
+      const beforeOrder = day.events.map(e => `${e.time || "(參考卡)"} ${e.title || e.id}`);
+      reorderByTime(day);
+      const afterOrder = day.events.map(e => `${e.time || "(參考卡)"} ${e.title || e.id}`);
+      ALLOW_REORDER_DATES.add(date);
+      TOUCHED_DATES.add(date);
+      diff.reorder.push({
+        date,
+        dn: dnByDate.get(date),
+        changed: !deepEqual(beforeOrder, afterOrder),
+        beforeOrder,
+        afterOrder
+      });
+    }
+
+    // ----- C. Helper for ID-based list sections (shopping, luggage, todos, accommodations) -----
+    function applyIdListSection(secKey, secLabel, patchObj, cfg) {
+      assert(patchObj && typeof patchObj === "object" && !Array.isArray(patchObj), `${secKey} 必須是物件`);
+      const allowedSubKeys = new Set(["modify", "add", "delete", ...(cfg.catKey ? ["add_categories"] : [])]);
+      for (const k of Object.keys(patchObj)) {
+        assert(allowedSubKeys.has(k), `${secKey} 包含不支援的鍵："${k}"`);
+      }
+
+      assert(Array.isArray(origDoc[secKey]), `原檔缺少 ${secKey} 陣列`);
+      const origArr = origDoc[secKey];
+      const workArr = data[secKey];
+      const origMap = new Map(origArr.map(x => [x.id, x]));
+
+      const secDiff = { sectionKey: secKey, sectionLabel: secLabel, meta: [], modifies: [], adds: [], moves: [], deletes: [] };
+      const track = { modify: new Map(), add: new Set(), del: new Set(), catsAdded: [] };
+
+      // Categories first
+      if (cfg.catKey && patchObj.add_categories) {
+        assert(Array.isArray(patchObj.add_categories), `${secKey}.add_categories 必須是陣列`);
+        assert(Array.isArray(data[cfg.catKey]), `原檔缺少 ${cfg.catKey} 陣列`);
+        for (const cat of patchObj.add_categories) {
+          assert(typeof cat === "string" && cat.trim().length > 0, `${secKey}.add_categories 必須為非空字串`);
+          const c = cat.trim();
+          if (!data[cfg.catKey].includes(c)) {
+            data[cfg.catKey].push(c);
+            track.catsAdded.push(c);
+            secDiff.meta.push(`新增分類：${c}`);
+            TOUCHED_TOP_KEYS.add(cfg.catKey);
+          }
+        }
+      }
+      const validCats = cfg.catKey ? new Set(data[cfg.catKey] || []) : null;
+
+      // Deletes
+      const delIds = patchObj.delete || [];
+      assert(Array.isArray(delIds), `${secKey}.delete 必須是陣列`);
+      for (const id of delIds) {
+        assert(typeof id === "string" && origMap.has(id), `${secKey}.delete 含不存在的 id：${JSON.stringify(id)}`);
+        assert(!track.del.has(id), `${secKey}.delete 出現重複 id：${id}`);
+        track.del.add(id);
+      }
+
+      // Modifies
+      const modList = patchObj.modify || [];
+      assert(Array.isArray(modList), `${secKey}.modify 必須是陣列`);
+      const seenMod = new Set();
+      for (const item of modList) {
+        assert(item && typeof item === "object" && typeof item.id === "string", `${secKey}.modify 項目缺少 id`);
+        const id = item.id;
+        assert(origMap.has(id), `${secKey}.modify 含不存在的 id：${JSON.stringify(id)}`);
+        assert(!track.del.has(id), `${secKey} 項目 ${id} 同時出現在 modify 與 delete`);
+        assert(!seenMod.has(id), `${secKey}.modify 出現重複 id：${id}`);
+        seenMod.add(id);
+
+        const target = workArr.find(x => x.id === id);
+        const allowedSet = new Set();
+        const fieldChanges = [];
+
+        if (item.fields !== undefined) {
+          assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+            `${secKey}.modify(${id}).fields 必須是物件`);
+          for (const [k, v] of Object.entries(item.fields)) {
+            assert(!cfg.forbiddenKeys.has(k), `禁止在 ${secKey}.modify(${id}) 中直接修改 ${k}`);
+            assert(cfg.allowedFields.has(k), `${secKey}.modify(${id}) 出現不支援欄位：${k}`);
+            cfg.validateField(k, v, validCats, `${secKey}(${id})`);
+            allowedSet.add(k);
+            if (!deepEqual(target[k], v)) fieldChanges.push({ key: k, oldVal: target[k], newVal: v });
+            target[k] = v;
+          }
+        }
+
+        let memoAppended = null;
+        if (cfg.supportsMemo && typeof item.append_memo === "string" && item.append_memo.length > 0) {
+          allowedSet.add("memo");
+          memoAppended = applyAppendMemo(target, `${secLabel} ${id}`, item.append_memo, item.create_memo_if_missing);
+        }
+
+        if (allowedSet.size > 0) {
+          track.modify.set(id, allowedSet);
+          secDiff.modifies.push({
+            id,
+            title: cfg.titleOf(origMap.get(id)),
+            sub: cfg.subOf ? cfg.subOf(origMap.get(id)) : "",
+            fieldChanges,
+            memoAppended
+          });
+        }
+      }
+
+      // Execute deletes
+      for (const id of track.del) {
+        const idx = workArr.findIndex(x => x.id === id);
+        assert(idx !== -1, `無法刪除 ${secKey} 項目 ${id}`);
+        const [removed] = workArr.splice(idx, 1);
+        deletedObjects.push(removed);
+        diff.delete.push({
+          section: secLabel,
+          id,
+          meta: `${secLabel}${cfg.subOf && cfg.subOf(removed) ? "・" + cfg.subOf(removed) : ""} ・ id: ${id}`,
+          title: cfg.titleOf(removed),
+          hasMemo: Boolean(removed.memo),
+          imgCount: imgCounter(removed).total
+        });
+      }
+
+      // Adds
+      const adds = patchObj.add || [];
+      assert(Array.isArray(adds), `${secKey}.add 必須是陣列`);
+      for (const item of adds) {
+        assert(item && typeof item === "object" && !Array.isArray(item), `${secKey}.add 項目格式錯誤`);
+        const newObj = cfg.buildNew(item, usedIds, validCats);
+        workArr.push(newObj);
+        track.add.add(newObj.id);
+        secDiff.adds.push({
+          id: newObj.id,
+          title: cfg.titleOf(newObj),
+          sub: cfg.subOf ? cfg.subOf(newObj) : "",
+          extra: cfg.addSummary(newObj)
+        });
+      }
+
+      const hasChange = track.catsAdded.length > 0 || track.modify.size > 0 || track.add.size > 0 || track.del.size > 0;
+      if (hasChange) {
+        TOUCHED_TOP_KEYS.add(secKey);
+        sectionTrack[secKey] = track;
+        diff.sections.push(secDiff);
+      }
+      return hasChange;
+    }
+
+    // 1) shopping
+    if (patch.shopping !== undefined) {
+      applyIdListSection("shopping", "🛍️ 購物清單", patch.shopping, {
+        catKey: "shoppingCategories",
+        forbiddenKeys: FORBIDDEN_SHOP_EDIT_KEYS,
+        allowedFields: SHOPPING_FIELDS,
+        supportsMemo: true,
+        titleOf: x => x.text || "(未命名購物項目)",
+        subOf: x => x.category || "",
+        validateField: (k, v, cats, lbl) => {
+          if (k === "done") assert(typeof v === "boolean", `${lbl} 的 done 必須是布林值`);
+          else assert(typeof v === "string", `${lbl} 的 ${k} 必須是字串`);
+          if (k === "category") assert(cats.has(v), `${lbl} 的分類 "${v}" 不存在（請先列入 add_categories）`);
+          if (k === "dayDate" && v !== "") assert(DATE_RE.test(v), `${lbl} 的 dayDate 必須為 YYYY-MM-DD 或空字串`);
+        },
+        buildNew: (item, ids, cats) => {
+          for (const fk of ["id", "image", "memo"]) {
+            assert(!Object.prototype.hasOwnProperty.call(item, fk), `shopping.add 不可直接設定 ${fk}`);
+          }
+          assert(typeof item.text === "string" && item.text.trim().length > 0, "shopping.add 缺少項目名稱 text");
+          const cat = item.category !== undefined ? item.category : (data.shoppingCategories[0] || "其他");
+          assert(typeof cat === "string" && cats.has(cat), `shopping.add 的分類 "${cat}" 不存在（請先列入 add_categories）`);
+          const obj = {
+            id: genId(ids, 8),
+            text: item.text.trim(),
+            category: cat,
+            done: Boolean(item.done),
+            dayDate: typeof item.dayDate === "string" ? item.dayDate : "",
+            place: typeof item.place === "string" ? item.place : "",
+            url: typeof item.url === "string" ? item.url : "",
+            note: typeof item.note === "string" ? item.note : "",
+            image: ""
+          };
+          if (obj.dayDate) assert(DATE_RE.test(obj.dayDate), `shopping.add dayDate 格式錯誤：${obj.dayDate}`);
+          if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
+            obj.memo = { title: "筆記", html: item.memo_html };
+          }
+          return obj;
+        },
+        addSummary: x => [x.place && `地點：${x.place}`, x.note && `備註：${x.note}`, x.dayDate && `日期：${x.dayDate}`, x.memo && "含初始筆記"].filter(Boolean)
+      });
+    }
+
+    // 2) luggage
+    if (patch.luggage !== undefined) {
+      applyIdListSection("luggage", "🧳 行李清單", patch.luggage, {
+        catKey: "luggageCategories",
+        forbiddenKeys: FORBIDDEN_ITEM_EDIT_KEYS,
+        allowedFields: LUGGAGE_FIELDS,
+        supportsMemo: true,
+        titleOf: x => x.text || "(未命名行李)",
+        subOf: x => x.category || "",
+        validateField: (k, v, cats, lbl) => {
+          if (k === "done") assert(typeof v === "boolean", `${lbl} 的 done 必須是布林值`);
+          else assert(typeof v === "string", `${lbl} 的 ${k} 必須是字串`);
+          if (k === "category") assert(cats.has(v), `${lbl} 的分類 "${v}" 不存在（請先列入 add_categories）`);
+        },
+        buildNew: (item, ids, cats) => {
+          assert(typeof item.text === "string" && item.text.trim().length > 0, "luggage.add 缺少項目名稱 text");
+          const cat = item.category !== undefined ? item.category : (data.luggageCategories[0] || "其他");
+          assert(typeof cat === "string" && cats.has(cat), `luggage.add 的分類 "${cat}" 不存在（請先列入 add_categories）`);
+          const obj = {
+            id: genId(ids, 8),
+            text: item.text.trim(),
+            category: cat,
+            done: Boolean(item.done)
+          };
+          if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
+            obj.memo = { title: "筆記", html: item.memo_html };
+          }
+          return obj;
+        },
+        addSummary: x => [x.done && "已勾選", x.memo && "含初始筆記"].filter(Boolean)
+      });
+    }
+
+    // 3) todos
+    if (patch.todos !== undefined) {
+      applyIdListSection("todos", "✅ 旅行待辦", patch.todos, {
+        catKey: null,
+        forbiddenKeys: FORBIDDEN_ITEM_EDIT_KEYS,
+        allowedFields: TODO_FIELDS,
+        supportsMemo: true,
+        titleOf: x => x.text || "(未命名待辦)",
+        subOf: x => x.done ? "已完成" : "未完成",
+        validateField: (k, v, _, lbl) => {
+          if (k === "done") assert(typeof v === "boolean", `${lbl} 的 done 必須是布林值`);
+          else assert(typeof v === "string", `${lbl} 的 ${k} 必須是字串`);
+        },
+        buildNew: (item, ids) => {
+          assert(typeof item.text === "string" && item.text.trim().length > 0, "todos.add 缺少事項內容 text");
+          const obj = {
+            id: genId(ids, 8),
+            text: item.text.trim(),
+            done: Boolean(item.done)
+          };
+          if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
+            obj.memo = { title: "筆記", html: item.memo_html };
+          }
+          return obj;
+        },
+        addSummary: x => [x.done && "已完成", x.memo && "含初始筆記"].filter(Boolean)
+      });
+    }
+
+    // 4) accommodations (+ automatic sync of stay with accommodations[0])
+    if (patch.accommodations !== undefined) {
+      const changed = applyIdListSection("accommodations", "🏨 住宿資訊", patch.accommodations, {
+        catKey: null,
+        forbiddenKeys: new Set(["id"]),
+        allowedFields: ACCOMM_FIELDS,
+        supportsMemo: false,
+        titleOf: x => x.name || "(未命名住宿)",
+        subOf: x => [x.checkin, x.checkout].filter(Boolean).join(" → "),
+        validateField: (k, v, _, lbl) => {
+          assert(typeof v === "string", `${lbl} 的 ${k} 必須是字串`);
+          if ((k === "checkin" || k === "checkout" || k === "dayDate") && v !== "") {
+            assert(DATE_RE.test(v), `${lbl} 的 ${k} 必須為 YYYY-MM-DD 或空字串`);
+          }
+        },
+        buildNew: (item, ids) => {
+          assert(typeof item.name === "string" && item.name.trim().length > 0, "accommodations.add 缺少住宿名稱 name");
+          const obj = {
+            name: item.name.trim(),
+            address: typeof item.address === "string" ? item.address : "",
+            mapUrl: typeof item.mapUrl === "string" ? item.mapUrl : "",
+            checkin: typeof item.checkin === "string" ? item.checkin : "",
+            checkout: typeof item.checkout === "string" ? item.checkout : "",
+            booking: typeof item.booking === "string" ? item.booking : "",
+            note: typeof item.note === "string" ? item.note : "",
+            dayDate: typeof item.dayDate === "string" ? item.dayDate : "",
+            id: genId(ids, 8),
+            contact: typeof item.contact === "string" ? item.contact : ""
+          };
+          return obj;
+        },
+        addSummary: x => [x.booking && `預訂號：${x.booking}`, x.address && `地址：${x.address}`].filter(Boolean)
+      });
+      if (changed && Object.prototype.hasOwnProperty.call(origDoc, "stay")) {
+        data.stay = data.accommodations.length > 0
+          ? deepClone(data.accommodations[0])
+          : { name: "", address: "", mapUrl: "", checkin: "", checkout: "", booking: "", note: "" };
+        TOUCHED_TOP_KEYS.add("stay");
+      }
+    }
+
+    // 5) backups (lists + nested items)
+    if (patch.backups !== undefined) {
+      const bp = patch.backups;
+      assert(bp && typeof bp === "object" && !Array.isArray(bp), "backups 必須是物件");
+      const allowedBpKeys = new Set(["add_lists", "rename_lists", "delete_lists", "modify_items", "add_items", "move_items", "delete_items"]);
+      for (const k of Object.keys(bp)) assert(allowedBpKeys.has(k), `backups 包含不支援的鍵："${k}"`);
+      assert(Array.isArray(origDoc.backups), "原檔缺少 backups 陣列");
+
+      const origListsMap = new Map(origDoc.backups.map(l => [l.id, l]));
+      const origItemsMap = new Map();
+      for (const l of origDoc.backups) {
+        for (const it of l.items || []) origItemsMap.set(it.id, { listId: l.id, listName: l.name, item: it });
+      }
+
+      const secDiff = { sectionKey: "backups", sectionLabel: "📌 備用行程", meta: [], modifies: [], adds: [], moves: [], deletes: [] };
+      const bTrack = {
+        addedLists: new Set(),
+        renamedLists: new Set(),
+        deletedLists: new Set(),
+        modItems: new Map(),
+        addItems: new Set(),
+        moveItems: new Set(),
+        delItems: new Set()
+      };
+
+      const findList = (lid) => data.backups.find(l => l.id === lid);
+      const findItemLoc = (iid) => {
+        for (const l of data.backups) {
+          const idx = (l.items || []).findIndex(x => x.id === iid);
+          if (idx !== -1) return { list: l, idx, item: l.items[idx] };
+        }
+        return null;
+      };
+
+      // delete_lists
+      for (const lid of bp.delete_lists || []) {
+        assert(typeof lid === "string" && origListsMap.has(lid), `backups.delete_lists 含不存在的 list id：${lid}`);
+        assert(!bTrack.deletedLists.has(lid), `backups.delete_lists 重複 id：${lid}`);
+        bTrack.deletedLists.add(lid);
+      }
+      // delete_items
+      for (const iid of bp.delete_items || []) {
+        assert(typeof iid === "string" && origItemsMap.has(iid), `backups.delete_items 含不存在的 item id：${iid}`);
+        assert(!bTrack.delItems.has(iid), `backups.delete_items 重複 id：${iid}`);
+        bTrack.delItems.add(iid);
+      }
+
+      // add_lists
+      const newListByName = new Map();
+      for (const l of bp.add_lists || []) {
+        assert(l && typeof l === "object" && typeof l.name === "string" && l.name.trim(), "backups.add_lists 缺少清單名稱 name");
+        const nl = { id: genId(usedIds, 8), name: l.name.trim(), items: [], collapsed: false };
+        data.backups.push(nl);
+        bTrack.addedLists.add(nl.id);
+        newListByName.set(nl.name, nl);
+        secDiff.meta.push(`新增備用清單：${nl.name}（id: ${nl.id}）`);
+      }
+
+      // rename_lists
+      for (const r of bp.rename_lists || []) {
+        assert(r && typeof r === "object" && typeof r.id === "string" && typeof r.name === "string" && r.name.trim(),
+          "backups.rename_lists 缺少 id 或 name");
+        assert(origListsMap.has(r.id), `backups.rename_lists 含不存在的 list id：${r.id}`);
+        assert(!bTrack.deletedLists.has(r.id), `備用清單 ${r.id} 同時出現在 rename 與 delete`);
+        const l = findList(r.id);
+        secDiff.meta.push(`備用清單改名：${l.name} → ${r.name.trim()}`);
+        l.name = r.name.trim();
+        bTrack.renamedLists.add(r.id);
+      }
+
+      // modify_items
+      const seenModIt = new Set();
+      for (const m of bp.modify_items || []) {
+        assert(m && typeof m === "object" && typeof m.id === "string", "backups.modify_items 缺少 id");
+        const iid = m.id;
+        assert(origItemsMap.has(iid), `backups.modify_items 含不存在的 item id：${iid}`);
+        assert(!bTrack.delItems.has(iid), `備用項目 ${iid} 同時出現在 modify 與 delete`);
+        assert(!seenModIt.has(iid), `backups.modify_items 重複 id：${iid}`);
+        seenModIt.add(iid);
+
+        const loc = findItemLoc(iid);
+        assert(loc, `找不到備用項目 ${iid}`);
+        if (m.list_id) assert(loc.list.id === m.list_id, `備用項目 ${iid} 不在指定清單 ${m.list_id} 中`);
+
+        const allowedSet = new Set();
+        const fieldChanges = [];
+        if (m.fields !== undefined) {
+          assert(m.fields && typeof m.fields === "object" && !Array.isArray(m.fields), `backups.modify_items(${iid}).fields 必須是物件`);
+          for (const [k, v] of Object.entries(m.fields)) {
+            assert(!FORBIDDEN_ITEM_EDIT_KEYS.has(k), `禁止在 backups.modify_items(${iid}) 直接修改 ${k}`);
+            assert(BACKUP_ITEM_FIELDS.has(k), `backups.modify_items(${iid}) 不支援欄位：${k}`);
+            if (k === "used") assert(Array.isArray(v), `backups(${iid}).used 必須是陣列`);
+            else assert(typeof v === "string", `backups(${iid}).${k} 必須是字串`);
+            if (k === "kind") assert(NATIVE_BACKUP_KINDS.includes(v), `backups(${iid}).kind 不合法：${JSON.stringify(v)}`);
+            allowedSet.add(k);
+            if (!deepEqual(loc.item[k], v)) fieldChanges.push({ key: k, oldVal: loc.item[k], newVal: v });
+            loc.item[k] = v;
+          }
+        }
+        let memoAppended = null;
+        if (typeof m.append_memo === "string" && m.append_memo.length > 0) {
+          allowedSet.add("memo");
+          memoAppended = applyAppendMemo(loc.item, `備用項目 ${iid}`, m.append_memo, m.create_memo_if_missing);
+        }
+        if (allowedSet.size > 0) {
+          bTrack.modItems.set(iid, allowedSet);
+          secDiff.modifies.push({
+            id: iid,
+            title: origItemsMap.get(iid).item.title || "(未命名)",
+            sub: `清單：${loc.list.name}`,
+            fieldChanges,
+            memoAppended
+          });
+        }
+      }
+
+      // move_items
+      for (const mv of bp.move_items || []) {
+        assert(mv && typeof mv === "object" && typeof mv.id === "string" && typeof mv.to_list_id === "string",
+          "backups.move_items 須含 id 與 to_list_id");
+        assert(origItemsMap.has(mv.id), `backups.move_items 含不存在的 item id：${mv.id}`);
+        assert(!bTrack.delItems.has(mv.id), `備用項目 ${mv.id} 同時出現在 move 與 delete`);
+        const loc = findItemLoc(mv.id);
+        const dst = findList(mv.to_list_id);
+        assert(dst && !bTrack.deletedLists.has(dst.id), `backups.move_items 目標清單不存在或將被刪除：${mv.to_list_id}`);
+        assert(loc.list.id !== dst.id, `備用項目 ${mv.id} 已在清單 ${dst.name} 中`);
+        const [moved] = loc.list.items.splice(loc.idx, 1);
+        dst.items.push(moved);
+        bTrack.moveItems.add(mv.id);
+        secDiff.moves.push(`${moved.title || mv.id}：${loc.list.name} → ${dst.name}`);
+      }
+
+      // Execute delete_items
+      for (const iid of bTrack.delItems) {
+        const loc = findItemLoc(iid);
+        if (!loc) continue;
+        const [removed] = loc.list.items.splice(loc.idx, 1);
+        deletedObjects.push(removed);
+        diff.delete.push({
+          section: "備用行程",
+          id: iid,
+          meta: `備用清單「${loc.list.name}」 ・ id: ${iid}`,
+          title: removed.title || "(未命名)",
+          hasMemo: Boolean(removed.memo),
+          imgCount: imgCounter(removed).total
+        });
+      }
+
+      // Execute delete_lists
+      for (const lid of bTrack.deletedLists) {
+        const idx = data.backups.findIndex(l => l.id === lid);
+        assert(idx !== -1, `無法刪除備用清單 ${lid}`);
+        const [removedList] = data.backups.splice(idx, 1);
+        deletedObjects.push(removedList);
+        for (const it of removedList.items || []) bTrack.delItems.add(it.id);
+        diff.delete.push({
+          section: "備用清單（整組）",
+          id: lid,
+          meta: `備用清單 ・ 含 ${(removedList.items || []).length} 筆項目 ・ id: ${lid}`,
+          title: removedList.name || "(未命名清單)",
+          hasMemo: (removedList.items || []).some(x => Boolean(x.memo)),
+          imgCount: imgCounter(removedList).total
+        });
+      }
+
+      // add_items
+      for (const a of bp.add_items || []) {
+        assert(a && typeof a === "object" && typeof a.title === "string" && a.title.trim(), "backups.add_items 缺少 title");
+        let dstList = null;
+        if (a.list_id) dstList = findList(a.list_id);
+        else if (a.list_name) dstList = newListByName.get(a.list_name) || data.backups.find(l => l.name === a.list_name);
+        assert(dstList, `backups.add_items 找不到目標清單（list_id=${a.list_id || ""}, list_name=${a.list_name || ""}）`);
+        const kind = a.kind !== undefined ? a.kind : "";
+        assert(typeof kind === "string" && NATIVE_BACKUP_KINDS.includes(kind), `backups.add_items kind 不合法：${JSON.stringify(kind)}`);
+        const newIt = {
+          id: genId(usedIds, 8),
+          title: a.title.trim(),
+          kind,
+          hours: typeof a.hours === "string" ? a.hours : "",
+          address: typeof a.address === "string" ? a.address : "",
+          mapUrl: typeof a.mapUrl === "string" ? a.mapUrl : "",
+          link: typeof a.link === "string" ? a.link : "",
+          note: typeof a.note === "string" ? a.note : "",
+          used: []
+        };
+        if (typeof a.memo_html === "string" && a.memo_html.length > 0) {
+          newIt.memo = { title: "筆記", html: a.memo_html };
+        }
+        dstList.items.push(newIt);
+        bTrack.addItems.add(newIt.id);
+        secDiff.adds.push({
+          id: newIt.id,
+          title: newIt.title,
+          sub: `清單：${dstList.name}`,
+          extra: [newIt.kind && `分類：${newIt.kind}`, newIt.hours && `營業：${newIt.hours}`, newIt.note && `備註：${newIt.note}`, newIt.memo && "含初始筆記"].filter(Boolean)
+        });
+      }
+
+      const bChanged = bTrack.addedLists.size + bTrack.renamedLists.size + bTrack.deletedLists.size +
+        bTrack.modItems.size + bTrack.addItems.size + bTrack.moveItems.size + bTrack.delItems.size > 0;
+      if (bChanged) {
+        TOUCHED_TOP_KEYS.add("backups");
+        sectionTrack.backups = bTrack;
+        diff.sections.push(secDiff);
+      }
+    }
+
+    // 6) Index-based sections: flights & weather
+    function applyIndexListSection(secKey, secLabel, patchObj, cfg) {
+      assert(patchObj && typeof patchObj === "object" && !Array.isArray(patchObj), `${secKey} 必須是物件`);
+      for (const k of Object.keys(patchObj)) {
+        assert(k === "modify" || k === "add" || k === "delete", `${secKey} 包含不支援的鍵："${k}"`);
+      }
+      assert(Array.isArray(origDoc[secKey]), `原檔缺少 ${secKey} 陣列`);
+      const origArr = origDoc[secKey];
+      const workArr = data[secKey];
+      const secDiff = { sectionKey: secKey, sectionLabel: secLabel, meta: [], modifies: [], adds: [], moves: [], deletes: [] };
+      const track = { modify: new Map(), del: new Set(), addCount: 0 };
+
+      for (const idx of patchObj.delete || []) {
+        assert(Number.isInteger(idx) && idx >= 0 && idx < origArr.length, `${secKey}.delete 索引超出範圍：${idx}`);
+        assert(!track.del.has(idx), `${secKey}.delete 重複索引：${idx}`);
+        track.del.add(idx);
+      }
+
+      for (const m of patchObj.modify || []) {
+        assert(m && typeof m === "object" && Number.isInteger(m.index) && m.index >= 0 && m.index < origArr.length,
+          `${secKey}.modify 索引無效`);
+        assert(!track.del.has(m.index), `${secKey} 索引 ${m.index} 同時出現在 modify 與 delete`);
+        assert(!track.modify.has(m.index), `${secKey}.modify 重複索引：${m.index}`);
+        assert(m.fields && typeof m.fields === "object" && !Array.isArray(m.fields), `${secKey}.modify(${m.index}).fields 必須是物件`);
+
+        const target = workArr[m.index];
+        const allowed = new Set();
+        const fieldChanges = [];
+        for (const [k, v] of Object.entries(m.fields)) {
+          assert(cfg.allowedFields.has(k), `${secKey}.modify(${m.index}) 不支援欄位：${k}`);
+          cfg.validateField(k, v, `${secKey}[${m.index}]`);
+          allowed.add(k);
+          if (!deepEqual(target[k], v)) fieldChanges.push({ key: k, oldVal: target[k], newVal: v });
+          target[k] = v;
+        }
+        if (allowed.size > 0) {
+          track.modify.set(m.index, allowed);
+          secDiff.modifies.push({
+            id: `#${m.index}`,
+            title: cfg.titleOf(origArr[m.index], m.index),
+            sub: "",
+            fieldChanges,
+            memoAppended: null
+          });
+        }
+      }
+
+      // Delete in descending order so indices stay accurate
+      const sortedDels = [...track.del].sort((a, b) => b - a);
+      for (const idx of sortedDels) {
+        const [removed] = workArr.splice(idx, 1);
+        deletedObjects.push(removed);
+        diff.delete.push({
+          section: secLabel,
+          id: `#${idx}`,
+          meta: `${secLabel} ・ 索引 #${idx}`,
+          title: cfg.titleOf(removed, idx),
+          hasMemo: false,
+          imgCount: imgCounter(removed).total
+        });
+      }
+
+      for (const a of patchObj.add || []) {
+        assert(a && typeof a === "object" && !Array.isArray(a), `${secKey}.add 格式錯誤`);
+        const newObj = cfg.buildNew(a);
+        workArr.push(newObj);
+        track.addCount++;
+        secDiff.adds.push({
+          id: "新增",
+          title: cfg.titleOf(newObj, workArr.length - 1),
+          sub: "",
+          extra: cfg.addSummary(newObj)
+        });
+      }
+
+      if (track.modify.size > 0 || track.del.size > 0 || track.addCount > 0) {
+        TOUCHED_TOP_KEYS.add(secKey);
+        sectionTrack[secKey] = track;
+        diff.sections.push(secDiff);
+      }
+    }
+
+    if (patch.flights !== undefined) {
+      applyIndexListSection("flights", "✈️ 航班資訊", patch.flights, {
+        allowedFields: FLIGHT_FIELDS,
+        titleOf: (f, i) => `${f.direction || "航班"} ${[f.from, f.to].filter(Boolean).join(" → ") || ("#" + i)}`,
+        validateField: (k, v, lbl) => {
+          assert(typeof v === "string", `${lbl}.${k} 必須是字串`);
+        },
+        buildNew: (a) => {
+          const obj = {};
+          for (const k of FLIGHT_FIELDS) obj[k] = typeof a[k] === "string" ? a[k] : "";
+          if (!obj.direction) obj.direction = "轉機";
+          return obj;
+        },
+        addSummary: f => [f.airline, f.number, f.date && `${f.date} ${f.depart}`].filter(Boolean)
+      });
+    }
+
+    if (patch.weather !== undefined) {
+      applyIndexListSection("weather", "🌤️ 天氣連結", patch.weather, {
+        allowedFields: WEATHER_FIELDS,
+        titleOf: (w, i) => w.title || `天氣項目 #${i}`,
+        validateField: (k, v, lbl) => {
+          if (k === "links") {
+            assert(Array.isArray(v), `${lbl}.links 必須是陣列`);
+            for (const lk of v) {
+              assert(lk && typeof lk === "object" && typeof lk.label === "string" && typeof lk.url === "string",
+                `${lbl}.links 項目必須包含 label 與 url 字串`);
+            }
+          } else assert(typeof v === "string", `${lbl}.${k} 必須是字串`);
+        },
+        buildNew: (a) => {
+          assert(typeof a.title === "string" && a.title.trim(), "weather.add 缺少 title");
+          const links = Array.isArray(a.links) ? a.links.map(l => ({
+            label: typeof l.label === "string" ? l.label : "天氣網站",
+            url: typeof l.url === "string" ? l.url : ""
+          })) : [];
+          return {
+            title: a.title.trim(),
+            tag: typeof a.tag === "string" ? a.tag : "",
+            links,
+            note: typeof a.note === "string" ? a.note : ""
+          };
+        },
+        addSummary: w => [w.tag && `標籤：${w.tag}`, w.links.length && `${w.links.length} 條連結`].filter(Boolean)
+      });
+    }
+
+    // 7) info (mapUrl + links / emergency / resv)
+    if (patch.info !== undefined) {
+      const ip = patch.info;
+      assert(ip && typeof ip === "object" && !Array.isArray(ip), "info 必須是物件");
+      for (const k of Object.keys(ip)) assert(["mapUrl", "links", "emergency", "resv"].includes(k), `info 包含不支援的鍵："${k}"`);
+      assert(origDoc.info && typeof origDoc.info === "object", "原檔缺少 info 物件");
+
+      const secDiff = { sectionKey: "info", sectionLabel: "ℹ️ 旅程資訊", meta: [], modifies: [], adds: [], moves: [], deletes: [] };
+      const iTrack = { mapUrlChanged: false, subs: {} };
+
+      if (ip.mapUrl !== undefined) {
+        assert(typeof ip.mapUrl === "string", "info.mapUrl 必須是字串");
+        if (data.info.mapUrl !== ip.mapUrl) {
+          secDiff.meta.push(`全行程地圖連結已更新`);
+          data.info.mapUrl = ip.mapUrl;
+          iTrack.mapUrlChanged = true;
+        }
+      }
+
+      const subSpecs = {
+        links: {
+          label: "重要連結",
+          fields: INFO_LINK_FIELDS,
+          titleOf: x => x.title || "(未命名連結)",
+          validate: (k, v, lbl) => {
+            if (k === "must") assert(typeof v === "boolean", `${lbl}.must 必須是布林值`);
+            else assert(typeof v === "string", `${lbl}.${k} 必須是字串`);
+          },
+          build: (a, ids) => {
+            assert(typeof a.title === "string" && a.title.trim(), "info.links.add 缺少 title");
+            return {
+              id: genId(ids, 8),
+              title: a.title.trim(),
+              sub: typeof a.sub === "string" ? a.sub : "",
+              url: typeof a.url === "string" ? a.url : "",
+              must: Boolean(a.must)
+            };
+          }
+        },
+        emergency: {
+          label: "緊急聯絡",
+          fields: INFO_EM_FIELDS,
+          titleOf: x => x.title || "(未命名聯絡)",
+          validate: (k, v, lbl) => assert(typeof v === "string", `${lbl}.${k} 必須是字串`),
+          build: (a, ids) => {
+            assert(typeof a.title === "string" && a.title.trim(), "info.emergency.add 缺少 title");
+            return {
+              id: genId(ids, 8),
+              title: a.title.trim(),
+              body: typeof a.body === "string" ? a.body : "",
+              note: typeof a.note === "string" ? a.note : ""
+            };
+          }
+        },
+        resv: {
+          label: "預約確認號",
+          fields: INFO_RESV_FIELDS,
+          titleOf: x => `${x.cat ? "[" + x.cat + "] " : ""}${x.title || "(未命名預約)"}`,
+          validate: (k, v, lbl) => {
+            assert(typeof v === "string", `${lbl}.${k} 必須是字串`);
+            if (k === "cat") assert(NATIVE_RESV_CATS.includes(v), `${lbl}.cat 不合法（允許：${NATIVE_RESV_CATS.join("、")}）`);
+          },
+          build: (a, ids) => {
+            assert(typeof a.title === "string" && a.title.trim(), "info.resv.add 缺少 title");
+            const cat = a.cat || "其他";
+            assert(NATIVE_RESV_CATS.includes(cat), `info.resv.add cat 不合法：${cat}`);
+            return {
+              id: genId(ids, 8),
+              cat,
+              title: a.title.trim(),
+              sub: typeof a.sub === "string" ? a.sub : "",
+              no: typeof a.no === "string" ? a.no : "",
+              url: typeof a.url === "string" ? a.url : ""
+            };
+          }
+        }
+      };
+
+      for (const subKey of ["links", "emergency", "resv"]) {
+        if (!ip[subKey]) continue;
+        const sp = ip[subKey];
+        const spec = subSpecs[subKey];
+        assert(sp && typeof sp === "object" && !Array.isArray(sp), `info.${subKey} 必須是物件`);
+        for (const k of Object.keys(sp)) assert(["modify", "add", "delete"].includes(k), `info.${subKey} 不支援鍵："${k}"`);
+
+        const origArr = origDoc.info[subKey] || [];
+        const workArr = data.info[subKey] = data.info[subKey] || [];
+        const origMap = new Map(origArr.map(x => [x.id, x]));
+        const st = { modify: new Map(), add: new Set(), del: new Set() };
+
+        for (const id of sp.delete || []) {
+          assert(typeof id === "string" && origMap.has(id), `info.${subKey}.delete 含不存在 id：${id}`);
+          assert(!st.del.has(id), `info.${subKey}.delete 重複 id：${id}`);
+          st.del.add(id);
+        }
+        for (const m of sp.modify || []) {
+          assert(m && typeof m === "object" && typeof m.id === "string" && origMap.has(m.id), `info.${subKey}.modify id 不存在`);
+          assert(!st.del.has(m.id), `info.${subKey} ${m.id} 同時 modify 與 delete`);
+          assert(m.fields && typeof m.fields === "object", `info.${subKey}.modify(${m.id}) 缺少 fields`);
+          const target = workArr.find(x => x.id === m.id);
+          const allowed = new Set();
+          const fieldChanges = [];
+          for (const [k, v] of Object.entries(m.fields)) {
+            assert(k !== "id" && spec.fields.has(k), `info.${subKey}.modify(${m.id}) 不支援欄位：${k}`);
+            spec.validate(k, v, `info.${subKey}(${m.id})`);
+            allowed.add(k);
+            if (!deepEqual(target[k], v)) fieldChanges.push({ key: k, oldVal: target[k], newVal: v });
+            target[k] = v;
+          }
+          if (allowed.size > 0) {
+            st.modify.set(m.id, allowed);
+            secDiff.modifies.push({ id: m.id, title: spec.titleOf(origMap.get(m.id)), sub: spec.label, fieldChanges, memoAppended: null });
+          }
+        }
+        for (const id of st.del) {
+          const idx = workArr.findIndex(x => x.id === id);
+          const [removed] = workArr.splice(idx, 1);
+          deletedObjects.push(removed);
+          diff.delete.push({
+            section: `旅程資訊・${spec.label}`,
+            id,
+            meta: `${spec.label} ・ id: ${id}`,
+            title: spec.titleOf(removed),
+            hasMemo: false,
+            imgCount: imgCounter(removed).total
+          });
+        }
+        for (const a of sp.add || []) {
+          const obj = spec.build(a, usedIds);
+          workArr.push(obj);
+          st.add.add(obj.id);
+          secDiff.adds.push({ id: obj.id, title: spec.titleOf(obj), sub: spec.label, extra: [obj.no && `確認號：${obj.no}`, obj.body && obj.body, obj.url && obj.url].filter(Boolean) });
+        }
+        if (st.modify.size || st.add.size || st.del.size) iTrack.subs[subKey] = st;
+      }
+
+      if (iTrack.mapUrlChanged || Object.keys(iTrack.subs).length > 0) {
+        TOUCHED_TOP_KEYS.add("info");
+        sectionTrack.info = iTrack;
+        diff.sections.push(secDiff);
+      }
+    }
+
+    // 8) budget
+    if (patch.budget !== undefined) {
+      const bp = patch.budget;
+      assert(bp && typeof bp === "object" && !Array.isArray(bp), "budget 必須是物件");
+      const allowedBk = new Set(["add_cats", "add_active", "custom_rates", "modify_entries", "modify_manual", "add_manual", "delete_manual"]);
+      for (const k of Object.keys(bp)) assert(allowedBk.has(k), `budget 包含不支援的鍵："${k}"`);
+      assert(origDoc.budget && typeof origDoc.budget === "object", "原檔缺少 budget 物件");
+
+      const ob = origDoc.budget;
+      const wb = data.budget;
+      const secDiff = { sectionKey: "budget", sectionLabel: "💰 預算", meta: [], modifies: [], adds: [], moves: [], deletes: [] };
+      const bTrack = { catsAdded: [], activeAdded: [], customSet: new Set(), modEntries: new Map(), modManual: new Map(), addManual: new Set(), delManual: new Set() };
+
+      for (const c of bp.add_cats || []) {
+        assert(typeof c === "string" && c.trim(), "budget.add_cats 必須為非空字串");
+        if (!wb.cats.includes(c.trim())) {
+          wb.cats.push(c.trim());
+          bTrack.catsAdded.push(c.trim());
+          secDiff.meta.push(`新增預算分類：${c.trim()}`);
+        }
+      }
+      for (const cu of bp.add_active || []) {
+        assert(typeof cu === "string" && /^[A-Z]{3}$/.test(cu), `budget.add_active 貨幣代碼格式錯誤：${cu}`);
+        if (cu !== "HKD" && !wb.active.includes(cu)) {
+          wb.active.push(cu);
+          bTrack.activeAdded.push(cu);
+          secDiff.meta.push(`新增幣別：${cu}`);
+        }
+      }
+      if (bp.custom_rates && typeof bp.custom_rates === "object") {
+        for (const [cu, val] of Object.entries(bp.custom_rates)) {
+          assert(/^[A-Z]{3}$/.test(cu) && typeof val === "number" && val > 0, `budget.custom_rates(${cu}) 必須為大於 0 的數字`);
+          wb.custom[cu] = val;
+          bTrack.customSet.add(cu);
+          secDiff.meta.push(`自訂匯率：1 ${cu} = ${val} HKD`);
+        }
+      }
+
+      const validCats = new Set(wb.cats || []);
+      const validCurs = new Set(["HKD", ...(wb.active || [])]);
+
+      for (const m of bp.modify_entries || []) {
+        assert(m && typeof m === "object" && typeof m.key === "string", "budget.modify_entries 缺少 key");
+        assert(Object.prototype.hasOwnProperty.call(ob.entries || {}, m.key), `budget.entries 不存在 key：${m.key}`);
+        assert(m.fields && typeof m.fields === "object", `budget.modify_entries(${m.key}) 缺少 fields`);
+        const target = wb.entries[m.key];
+        const allowed = new Set();
+        const fieldChanges = [];
+        for (const [k, v] of Object.entries(m.fields)) {
+          assert(BUDGET_ENTRY_FIELDS.has(k), `budget.modify_entries(${m.key}) 不支援欄位：${k}`);
+          if (k === "a") assert(v === null || (typeof v === "number" && Number.isFinite(v)), `budget(${m.key}).a 必須是數字或 null`);
+          else if (k === "p") assert(typeof v === "boolean", `budget(${m.key}).p 必須是布林值`);
+          else assert(typeof v === "string", `budget(${m.key}).${k} 必須是字串`);
+          if (k === "cat") assert(validCats.has(v), `budget(${m.key}) 分類 "${v}" 不存在`);
+          if (k === "cu") assert(validCurs.has(v), `budget(${m.key}) 幣別 "${v}" 未啟用（請先加入 add_active）`);
+          allowed.add(k);
+          if (!deepEqual(target[k], v)) fieldChanges.push({ key: k, oldVal: target[k], newVal: v });
+          target[k] = v;
+        }
+        if (allowed.size > 0) {
+          bTrack.modEntries.set(m.key, allowed);
+          secDiff.modifies.push({
+            id: m.key,
+            title: target.nm || target.last || m.key,
+            sub: "自動連結預算項目",
+            fieldChanges,
+            memoAppended: null
+          });
+        }
+      }
+
+      const origManualMap = new Map((ob.manual || []).map(x => [x.id, x]));
+      for (const id of bp.delete_manual || []) {
+        assert(typeof id === "string" && origManualMap.has(id), `budget.delete_manual 含不存在 id：${id}`);
+        bTrack.delManual.add(id);
+      }
+      for (const m of bp.modify_manual || []) {
+        assert(m && typeof m === "object" && typeof m.id === "string" && origManualMap.has(m.id), `budget.modify_manual id 不存在`);
+        assert(!bTrack.delManual.has(m.id), `budget 手動項目 ${m.id} 同時 modify 與 delete`);
+        const target = wb.manual.find(x => x.id === m.id);
+        const allowed = new Set();
+        const fieldChanges = [];
+        for (const [k, v] of Object.entries(m.fields || {})) {
+          assert(k !== "id" && BUDGET_MANUAL_FIELDS.has(k), `budget.modify_manual(${m.id}) 不支援欄位：${k}`);
+          if (k === "a") assert(v === null || (typeof v === "number" && Number.isFinite(v)), `budget(${m.id}).a 必須是數字或 null`);
+          else if (k === "p") assert(typeof v === "boolean", `budget(${m.id}).p 必須是布林值`);
+          else assert(typeof v === "string", `budget(${m.id}).${k} 必須是字串`);
+          if (k === "cat") assert(validCats.has(v), `budget(${m.id}) 分類 "${v}" 不存在`);
+          if (k === "cu") assert(validCurs.has(v), `budget(${m.id}) 幣別 "${v}" 未啟用`);
+          allowed.add(k);
+          if (!deepEqual(target[k], v)) fieldChanges.push({ key: k, oldVal: target[k], newVal: v });
+          target[k] = v;
+        }
+        if (allowed.size > 0) {
+          bTrack.modManual.set(m.id, allowed);
+          secDiff.modifies.push({ id: m.id, title: target.nm || m.id, sub: "手動預算項目", fieldChanges, memoAppended: null });
+        }
+      }
+      for (const id of bTrack.delManual) {
+        const idx = wb.manual.findIndex(x => x.id === id);
+        const [removed] = wb.manual.splice(idx, 1);
+        deletedObjects.push(removed);
+        diff.delete.push({
+          section: "預算（手動項目）",
+          id,
+          meta: `手動預算 ・ id: ${id}`,
+          title: `${removed.nm || id} (${removed.cu || "HKD"} ${removed.a ?? "未填"})`,
+          hasMemo: false,
+          imgCount: 0
+        });
+      }
+      for (const a of bp.add_manual || []) {
+        assert(a && typeof a === "object" && typeof a.nm === "string" && a.nm.trim(), "budget.add_manual 缺少名稱 nm");
+        const cat = a.cat || wb.cats[0] || "其他";
+        const cu = a.cu || "HKD";
+        const amt = a.a === undefined ? null : a.a;
+        assert(validCats.has(cat), `budget.add_manual 分類 "${cat}" 不存在`);
+        assert(validCurs.has(cu), `budget.add_manual 幣別 "${cu}" 未啟用`);
+        assert(amt === null || (typeof amt === "number" && Number.isFinite(amt)), "budget.add_manual 金額必須是數字或 null");
+        const obj = { id: genId(usedIds, 8, "m"), cat, nm: a.nm.trim(), cu, a: amt, p: Boolean(a.p) };
+        wb.manual.push(obj);
+        bTrack.addManual.add(obj.id);
+        secDiff.adds.push({ id: obj.id, title: obj.nm, sub: obj.cat, extra: [`${obj.cu} ${obj.a ?? "待填"}`, obj.p ? "已付" : "未付"] });
+      }
+
+      const bChanged = bTrack.catsAdded.length + bTrack.activeAdded.length + bTrack.customSet.size +
+        bTrack.modEntries.size + bTrack.modManual.size + bTrack.addManual.size + bTrack.delManual.size > 0;
+      if (bChanged) {
+        TOUCHED_TOP_KEYS.add("budget");
+        sectionTrack.budget = bTrack;
+        diff.sections.push(secDiff);
+      }
+    }
+
+    const totalChangeGroups =
+      diff.topModify.length + diff.dayModify.length + diff.modify.length +
+      diff.move.length + diff.add.length + diff.delete.length + diff.reorder.length +
+      diff.sections.length;
+    assert(totalChangeGroups > 0, "此修補指令未包含任何實際變動（全部清單皆為空）。");
+
+    // ===== Serialize & Re-parse =====
+    const serialized = JSON.stringify(data, null, 2);
+    const newDoc = JSON.parse(serialized);
+
+    // ===== 9/9 Strict Automated Verification =====
+    const checkpoints = [];
+    const checkpoint = (name) => checkpoints.push(name);
+    const oEv = eventsById(origDoc);
+    const nEv = eventsById(newDoc);
+
+    // (1/9) 異動清單自身合理性
+    for (const d of TOUCHED_DATES) assert(origDates.has(d), `TOUCHED_DATES 含不存在的日期：${d}`);
+    for (const d of ALLOW_REORDER_DATES) assert(TOUCHED_DATES.has(d), "ALLOW_REORDER_DATES 必須是 TOUCHED_DATES 的子集");
+    for (const eid of MODIFY.keys()) assert(oEv.has(eid), `MODIFY 含不存在的 event id：${eid}`);
+    for (const eid of MOVE) assert(oEv.has(eid), `MOVE 含不存在的 event id：${eid}`);
+    for (const eid of DELETE) assert(oEv.has(eid), `DELETE 含不存在的 event id：${eid}`);
+    for (const d of DAY_MODIFY.keys()) assert(TOUCHED_DATES.has(d), `DAY_MODIFY 日期未列入 TOUCHED_DATES：${d}`);
+    checkpoint("異動清單");
+
+    // (2/9) 頂層鍵順序與未授權區塊保護
+    assert(deepEqual(Object.keys(origDoc), Object.keys(newDoc)), "頂層 key 順序或集合改變");
+    for (const k of Object.keys(origDoc)) {
+      if (k !== "days" && !TOUCHED_TOP_KEYS.has(k)) {
+        assert(deepEqual(origDoc[k], newDoc[k]), `未授權頂層區塊或欄位被改：${k}`);
+      }
+    }
+    checkpoint("頂層鍵保護");
+
+    // (3/9) days 結構、未動日期、日欄位保護
+    assert(deepEqual(origDoc.days.map(d => d.id), newDoc.days.map(d => d.id)), "days id 或順序改變");
+    assert(deepEqual(origDoc.days.map(d => d.date), newDoc.days.map(d => d.date)), "days date 或順序改變");
+    for (let i = 0; i < origDoc.days.length; i++) {
+      const od = origDoc.days[i], nd = newDoc.days[i];
+      if (!TOUCHED_DATES.has(od.date)) {
+        assert(deepEqual(od, nd), `未點名日期被改：${od.date}`);
+      } else {
+        const allowedDay = DAY_MODIFY.get(od.date) || new Set();
+        const bad = [...changedKeys(od, nd, new Set(["events"]))].filter(k => !allowedDay.has(k));
+        assert(bad.length === 0, `${od.date} 的日欄位被未授權修改：${bad.join(", ")}`);
+      }
+    }
+    checkpoint("days結構");
+
+    // (4/9) event 層級精準 diff
+    const removedIds = new Set([...oEv.keys()].filter(id => !nEv.has(id)));
+    const addedIds = new Set([...nEv.keys()].filter(id => !oEv.has(id)));
+    assert(removedIds.size === DELETE.size && [...removedIds].every(id => DELETE.has(id)), "活動刪除集合不符");
+    assert(addedIds.size === ADD.size && [...addedIds].every(id => ADD.has(id)), "活動新增集合不符");
+
+    for (const eid of oEv.keys()) {
+      if (!nEv.has(eid)) continue;
+      const { date: od, event: oe } = oEv.get(eid);
+      const { date: nd, event: ne } = nEv.get(eid);
+      assert((od !== nd) === MOVE.has(eid), `${eid} 跨日搬移狀態不符：${od} -> ${nd}`);
+      const allowed = new Set(MODIFY.get(eid) || []);
+      if (MOVE.has(eid)) allowed.add("dayDate");
+      const bad = [...changedKeys(oe, ne)].filter(k => !allowed.has(k));
+      assert(bad.length === 0, `${eid} 改了未授權欄位：${bad.join(", ")}`);
+      verifyMemoAppendOnly(oe, ne, `活動 ${eid}`);
+    }
+    checkpoint("event diff");
+
+    // (5/9) 新增活動 Schema、型別與合法 kind
+    for (const eid of ADD) {
+      const { event: ne } = nEv.get(eid);
+      assert(ID_RE.test(eid), `新 id 格式不符：${eid}`);
+      assert(VALID_KINDS.has(ne.kind !== undefined ? ne.kind : ""), `新活動 ${eid} kind 不合法`);
+      const missing = [...BASE_KEYS].filter(k => !Object.prototype.hasOwnProperty.call(ne, k));
+      assert(missing.length === 0, `新活動 ${eid} 缺少必備欄位：${missing.join(", ")}`);
+      for (const [k, v] of Object.entries(ne)) {
+        if (k === "memo") {
+          assert(v && typeof v === "object" && typeof v.title === "string" && typeof v.html === "string",
+            `新活動 ${eid} 的 memo 格式異常`);
+          continue;
+        }
+        assert(EV_SCHEMA.has(k), `新活動 ${eid} 出現原檔從未有過的欄位：${k}`);
+        const t = jsType(v);
+        assert(EV_SCHEMA.get(k).has(t),
+          `新活動 ${eid} 欄位 "${k}" 型別 ${t} 不符原檔（允許：${[...EV_SCHEMA.get(k)].join("/")}）`);
+      }
+    }
+    checkpoint("新增活動Schema");
+
+    // (6/9) 每日順序（T22：只鎖定新舊檔 time 皆為空的參考卡）
+    for (let i = 0; i < origDoc.days.length; i++) {
+      const od = origDoc.days[i], nd = newDoc.days[i];
+      const date = od.date;
+      const seqOld = od.events.filter(e => nEv.has(e.id) && nEv.get(e.id).date === date).map(e => e.id);
+      const seqNew = nd.events.filter(e => oEv.has(e.id) && oEv.get(e.id).date === date).map(e => e.id);
+      if (ALLOW_REORDER_DATES.has(date)) {
+        const isPureRef = (id) => (oEv.get(id).event.time === "" && nEv.get(id).event.time === "");
+        assert(deepEqual(seqOld.filter(isPureRef), seqNew.filter(isPureRef)),
+          `${date} 參考卡(time空)的相對順序被改變`);
+      } else {
+        assert(deepEqual(seqOld, seqNew),
+          `${date} 既有活動的相對順序被改變；若需依時間重排請列入 reorder_dates`);
+      }
+    }
+    checkpoint("每日順序");
+
+    // (7/9) 其他區塊精準 diff（保護未動項目、圖片與筆記、分類與 stay 同步）
+    function verifyIdArrayDiff(secKey, origArr, newArr, track, opts = {}) {
+      const oMap = new Map(origArr.map(x => [x.id, x]));
+      const nMap = new Map(newArr.map(x => [x.id, x]));
+      const rem = new Set([...oMap.keys()].filter(id => !nMap.has(id)));
+      const add = new Set([...nMap.keys()].filter(id => !oMap.has(id)));
+      assert(rem.size === track.del.size && [...rem].every(id => track.del.has(id)), `${secKey} 刪除集合不符`);
+      assert(add.size === track.add.size && [...add].every(id => track.add.has(id)), `${secKey} 新增集合不符`);
+      for (const id of oMap.keys()) {
+        if (!nMap.has(id)) continue;
+        const oi = oMap.get(id), ni = nMap.get(id);
+        const allowed = track.modify.get(id) || new Set();
+        const bad = [...changedKeys(oi, ni)].filter(k => !allowed.has(k));
+        assert(bad.length === 0, `${secKey}(${id}) 改了未授權欄位：${bad.join(", ")}`);
+        if (opts.protectImage) assert((oi.image || "") === (ni.image || ""), `${secKey}(${id}) 圖片被未授權修改`);
+        if (opts.protectMemo) verifyMemoAppendOnly(oi, ni, `${secKey}(${id})`);
+      }
+      if (opts.validCats) {
+        for (const ni of newArr) {
+          assert(opts.validCats.has(ni.category), `${secKey}(${ni.id}) 分類 "${ni.category}" 不在合法分類中`);
+        }
+      }
+    }
+
+    if (sectionTrack.shopping) {
+      verifyIdArrayDiff("shopping", origDoc.shopping, newDoc.shopping, sectionTrack.shopping, {
+        protectImage: true, protectMemo: true, validCats: new Set(newDoc.shoppingCategories)
+      });
+    }
+    if (sectionTrack.luggage) {
+      verifyIdArrayDiff("luggage", origDoc.luggage, newDoc.luggage, sectionTrack.luggage, {
+        protectMemo: true, validCats: new Set(newDoc.luggageCategories)
+      });
+    }
+    if (sectionTrack.todos) {
+      verifyIdArrayDiff("todos", origDoc.todos, newDoc.todos, sectionTrack.todos, { protectMemo: true });
+    }
+    if (sectionTrack.accommodations) {
+      verifyIdArrayDiff("accommodations", origDoc.accommodations, newDoc.accommodations, sectionTrack.accommodations);
+      if (Object.prototype.hasOwnProperty.call(newDoc, "stay") && newDoc.accommodations.length > 0) {
+        assert(deepEqual(newDoc.stay, newDoc.accommodations[0]), "stay 未與第一筆住宿同步");
+      }
+    }
+    if (sectionTrack.backups) {
+      const bt = sectionTrack.backups;
+      const oIt = new Map(), nIt = new Map();
+      for (const l of origDoc.backups) for (const x of l.items || []) oIt.set(x.id, { lid: l.id, item: x });
+      for (const l of newDoc.backups) for (const x of l.items || []) nIt.set(x.id, { lid: l.id, item: x });
+      const remIt = new Set([...oIt.keys()].filter(id => !nIt.has(id)));
+      const addIt = new Set([...nIt.keys()].filter(id => !oIt.has(id)));
+      assert(remIt.size === bt.delItems.size && [...remIt].every(id => bt.delItems.has(id)), "backups 項目刪除集合不符");
+      assert(addIt.size === bt.addItems.size && [...addIt].every(id => bt.addItems.has(id)), "backups 項目新增集合不符");
+      for (const id of oIt.keys()) {
+        if (!nIt.has(id)) continue;
+        const o = oIt.get(id), n = nIt.get(id);
+        assert((o.lid !== n.lid) === bt.moveItems.has(id), `backups 項目 ${id} 跨清單搬移狀態不符`);
+        const allowed = bt.modItems.get(id) || new Set();
+        const bad = [...changedKeys(o.item, n.item)].filter(k => !allowed.has(k));
+        assert(bad.length === 0, `backups 項目 ${id} 改了未授權欄位：${bad.join(", ")}`);
+        verifyMemoAppendOnly(o.item, n.item, `備用項目 ${id}`);
+      }
+    }
+    for (const secKey of ["flights", "weather"]) {
+      if (!sectionTrack[secKey]) continue;
+      const tr = sectionTrack[secKey];
+      assert(newDoc[secKey].length === origDoc[secKey].length - tr.del.size + tr.addCount, `${secKey} 筆數不符`);
+      let nIdx = 0;
+      for (let oIdx = 0; oIdx < origDoc[secKey].length; oIdx++) {
+        if (tr.del.has(oIdx)) continue;
+        const allowed = tr.modify.get(oIdx) || new Set();
+        const bad = [...changedKeys(origDoc[secKey][oIdx], newDoc[secKey][nIdx])].filter(k => !allowed.has(k));
+        assert(bad.length === 0, `${secKey}[${oIdx}] 改了未授權欄位：${bad.join(", ")}`);
+        nIdx++;
+      }
+    }
+    if (sectionTrack.info) {
+      const it = sectionTrack.info;
+      if (!it.mapUrlChanged) assert(origDoc.info.mapUrl === newDoc.info.mapUrl, "info.mapUrl 被未授權修改");
+      for (const sub of ["links", "emergency", "resv"]) {
+        if (!it.subs[sub]) assert(deepEqual(origDoc.info[sub], newDoc.info[sub]), `info.${sub} 被未授權修改`);
+        else verifyIdArrayDiff(`info.${sub}`, origDoc.info[sub] || [], newDoc.info[sub] || [], it.subs[sub]);
+      }
+    }
+    if (sectionTrack.budget) {
+      const bt = sectionTrack.budget;
+      const oEnt = origDoc.budget.entries || {}, nEnt = newDoc.budget.entries || {};
+      assert(deepEqual(Object.keys(oEnt), Object.keys(nEnt)), "budget.entries 鍵集合改變");
+      for (const k of Object.keys(oEnt)) {
+        const allowed = bt.modEntries.get(k) || new Set();
+        const bad = [...changedKeys(oEnt[k], nEnt[k])].filter(fk => !allowed.has(fk));
+        assert(bad.length === 0, `budget.entries[${k}] 改了未授權欄位：${bad.join(", ")}`);
+      }
+      verifyIdArrayDiff("budget.manual", origDoc.budget.manual || [], newDoc.budget.manual || [], {
+        modify: bt.modManual, add: bt.addManual, del: bt.delManual
+      });
+    }
+    checkpoint("其他區塊diff");
+
+    // (8/9) dayDate 一致性與全檔 ID 唯一性
+    const allNewEvIds = [];
+    for (const day of newDoc.days) {
+      for (const e of day.events) {
+        assert(e.dayDate === day.date, `存在 event(${e.id}).dayDate 與所屬 day.date(${day.date}) 不一致`);
+        allNewEvIds.push(e.id);
+      }
+    }
+    assert(allNewEvIds.length === new Set(allNewEvIds).size, "出現重複的 event id");
+    for (const k of ["shopping", "luggage", "todos", "accommodations"]) {
+      if (Array.isArray(newDoc[k])) {
+        const ids = newDoc[k].map(x => x.id);
+        assert(ids.length === new Set(ids).size, `${k} 出現重複 id`);
+      }
+    }
+    if (Array.isArray(newDoc.backups)) {
+      const bItemIds = newDoc.backups.flatMap(l => (l.items || []).map(x => x.id));
+      assert(bItemIds.length === new Set(bItemIds).size, "backups 出現重複項目 id");
+    }
+    checkpoint("dayDate/ID唯一");
+
+    // (9/9) Base64 圖片與重要連結完整性（全檔掃描）
+    const oc = imgCounter(origDoc);
+    const nc = imgCounter(newDoc);
+    const dc = imgCounter(deletedObjects);
+    for (const [hash, origCount] of oc.counts.entries()) {
+      const newCount = nc.counts.get(hash) || 0;
+      const delCount = dc.counts.get(hash) || 0;
+      assert(newCount >= origCount - delCount, "Base64 圖片遺失或遭未授權修改");
+    }
+    assert(oc.marker === oc.total && nc.marker === nc.total, "存在非標準 data:image 字串");
+
+    const ol = linkCounts(origDoc);
+    const nl = linkCounts(newDoc);
+    const dl = linkCounts(deletedObjects);
+    for (const pat of LINK_PATTERNS) {
+      assert(nl[pat] >= ol[pat] - dl[pat], `${pat} 連結數量異常減少：${ol[pat]} → ${nl[pat]}`);
+    }
+    checkpoint("Base64/連結");
+
+    assert(checkpoints.length === TOTAL_PATCH_CHECKS,
+      `驗收段落未全部執行：${checkpoints.length}/${TOTAL_PATCH_CHECKS}`);
+
+    const untouchedDays = origDoc.days.length - TOUCHED_DATES.size;
+    const refOld = [...oEv.values()].filter(x => x.event.time === "").length;
+    const refNew = [...nEv.values()].filter(x => x.event.time === "").length;
+
+    return {
+      newDoc,
+      serialized,
+      diff,
+      checkpoints,
+      totalChecks: TOTAL_PATCH_CHECKS,
+      touchedSectionLabels: diff.sections.map(s => s.sectionLabel),
+      stats: {
+        untouchedDays,
+        eventsBefore: oEv.size,
+        eventsAfter: nEv.size,
+        refBefore: refOld,
+        refAfter: refNew,
+        base64Before: oc.total,
+        base64After: nc.total,
+        shortcutsBefore: ol["shortcuts://"],
+        shortcutsAfter: nl["shortcuts://"],
+        mapsBefore: ol["maps.app.goo.gl"],
+        mapsAfter: nl["maps.app.goo.gl"]
+      }
+    };
+  }
+
+  // =========================================================================
+  // MODE 2: CREATE NEW TRIP FROM EXISTING TEMPLATE JSON (6/6 VERIFICATION)
+  // =========================================================================
+  const AUTO_META_TOP_KEYS = new Set(["id", "title", "name", "destination", "desc", "start", "startDate", "end", "endDate", "days", "stay", "createdAt", "updatedAt"]);
+
+  function inspectTemplate(doc, byteSize = 0) {
+    const base = inspectDoc(doc, byteSize);
+    assert(doc.days.length > 0, "範本檔至少需有 1 天（days 不可為空），才能推斷日期欄位結構");
+    assert(base.eventsCount > 0, "範本檔至少需有 1 筆活動，才能推斷活動欄位結構");
+
+    const topKeys = Object.keys(doc);
+    const extraTopFields = [];
+    for (const k of topKeys) {
+      if (AUTO_META_TOP_KEYS.has(k)) continue;
+      const v = doc[k];
+      const t = jsType(v);
+      const imgs = imgCounter(v).total;
+      let summary = "";
+      if (t === "array") summary = `陣列（原 ${v.length} 筆）`;
+      else if (t === "object") summary = `物件（${Object.keys(v).length} 鍵）`;
+      else if (t === "string") summary = v.length > 30 ? `字串（${v.length} 字）` : `字串：${JSON.stringify(v)}`;
+      else summary = `${t}：${JSON.stringify(v)}`;
+
+      // Smart defaults tailored for 旅のノート: keep category lists (luggageCategories / shoppingCategories) by default
+      const isCatList = (k === "luggageCategories" || k === "shoppingCategories") && t === "array" && imgs === 0;
+      const defaultKeep = isCatList || t === "number" || t === "boolean" || (t === "string" && imgs === 0 && v.length <= 24);
+      extraTopFields.push({ key: k, type: t, imgCount: imgs, summary, defaultKeep });
+    }
+
+    const dayEditableFields = [...base.schema.dayTypes.keys()].filter(k => !FORBIDDEN_DAY_EDIT_KEYS.has(k));
+    const eventEditableFields = [...base.schema.types.keys()].filter(k => !FORBIDDEN_EVENT_EDIT_KEYS.has(k));
+
+    return { ...base, topKeys, extraTopFields, dayEditableFields, eventEditableFields };
+  }
+
+  function buildNewTripPrompt(templateDoc, { title, startDate, endDate }) {
+    const info = inspectTemplate(templateDoc);
+    const dates = expandDateRange(startDate, endDate);
+    const kindsStr = info.validKinds.map(k => JSON.stringify(k)).join("、");
+    const dateListLines = dates.map((d, idx) => `- D${idx + 1}：${d}`).join("\n");
+
+    return [
+      "你是我的「旅のノート」旅遊行程規劃與 JSON 建檔助手。接下來我會提供新旅程想法與景點；請幫我整理行程，並在定案後輸出單一 ```json 程式碼區塊，我會貼回本地安全工具自動生成 ID、補齊原網站必備欄位並跑 6/6 驗收。",
+      "",
+      "【新旅程資訊】",
+      `- 旅程名稱：${title || "新旅程"}`,
+      `- 日期範圍：${startDate} ～ ${endDate}（共 ${dates.length} 天）`,
+      dateListLines,
+      "",
+      "【嚴格格式規則】",
+      `1. 頂層只要包含 \`"days"\` 陣列，每筆 \`date\` 必須精確落在上述 ${dates.length} 個日期內（YYYY-MM-DD），不可重複。`,
+      `2. 每個活動的 \`kind\` 只能使用本網站合法值：${kindsStr}（一般填 \`""\`）。`,
+      `3. 活動的 \`fields\` 只能填以下既有欄位：${info.eventEditableFields.join(", ")}（禁止填入 id、dayDate、image、memo；字串不可填 null；time 用 HH:MM 或參考卡填 ""）。`,
+      "4. 需要筆記時請放在活動同層的 `memo_html`（如 `\"<p>...</p>\"`）。",
+      `5. 每日可填的日欄位：${info.dayEditableFields.join(", ")}。`,
+      "",
+      "【輸出 JSON 格式範例】",
+      "```json",
+      "{",
+      '  "days": [',
+      "    {",
+      `      "date": "${dates[0]}",`,
+      '      "title": "D1 日標題",',
+      '      "note": "",',
+      '      "events": [{ "kind": "", "fields": { "time": "10:00", "title": "景點名稱" }, "memo_html": "" }]',
+      "    }",
+      "  ]",
+      "}",
+      "```",
+      "",
+      "以下是我這次新旅程的想法與需求："
+    ].join("\n");
+  }
+
+  function buildDaySkeleton(templateDoc, usedIds, dateStr) {
+    const sampleDay = templateDoc.days[0];
+    const dayObj = {};
+    for (const [k, v] of Object.entries(sampleDay)) {
+      if (k === "id") dayObj[k] = genId(usedIds, 8);
+      else if (k === "date") dayObj[k] = dateStr;
+      else if (k === "events") dayObj[k] = [];
+      else dayObj[k] = emptyDefaultFor(v);
+    }
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "id")) dayObj.id = genId(usedIds, 8);
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "date")) dayObj.date = dateStr;
+    if (!Object.prototype.hasOwnProperty.call(dayObj, "events")) dayObj.events = [];
+    return dayObj;
+  }
+
+  function buildNewTripAndVerify(templateDoc, config, inputRaw) {
+    const { title, startDate, endDate, keepTopKeys = new Set(), autoSort = true, emptyShell = false } = config;
+    const info = inspectTemplate(templateDoc);
+    const { types: EV_SCHEMA, baseKeys: BASE_KEYS, validKinds: VALID_KINDS, dayTypes: DAY_SCHEMA } = info.schema;
+
+    const cleanTitle = (title || "").trim();
+    assert(cleanTitle.length > 0, "請先填寫「新旅程名稱」");
+    const targetDates = expandDateRange(startDate, endDate);
+    const targetDateSet = new Set(targetDates);
+
+    let payload = { days: [] };
+    if (!emptyShell) {
+      payload = typeof inputRaw === "string" ? extractJsonBlock(inputRaw, "新行程 JSON") : inputRaw;
+      assert(payload && typeof payload === "object" && !Array.isArray(payload), "新行程 JSON 根節點必須是物件");
+      assert(Array.isArray(payload.days), "新行程 JSON 缺少 days 陣列");
+    }
+
+    const oldIds = collectAllIds(templateDoc);
+    const usedIds = new Set(oldIds);
+
+    const outDoc = {};
+    let expectedKeptImages = 0;
+    const nowIso = new Date().toISOString();
+    const nowTs = Date.now();
+
+    for (const [k, v] of Object.entries(templateDoc)) {
+      if (k === "days") {
+        outDoc.days = [];
+      } else if (k === "id" && typeof v === "string") {
+        outDoc[k] = genId(usedIds, 8);
+      } else if ((k === "destination" || k === "title" || k === "name") && typeof v === "string") {
+        outDoc[k] = cleanTitle;
+      } else if (k === "desc" && typeof v === "string") {
+        outDoc[k] = "";
+      } else if ((k === "start" || k === "startDate") && typeof v === "string") {
+        outDoc[k] = startDate;
+      } else if ((k === "end" || k === "endDate") && typeof v === "string") {
+        outDoc[k] = endDate;
+      } else if (k === "stay" && v && typeof v === "object") {
+        outDoc[k] = { name: "", address: "", mapUrl: "", checkin: "", checkout: "", booking: "", note: "" };
+      } else if (k === "info" && v && typeof v === "object" && !keepTopKeys.has(k)) {
+        outDoc[k] = { mapUrl: "", links: [], emergency: [], resv: [] };
+      } else if (k === "budget" && v && typeof v === "object" && !keepTopKeys.has(k)) {
+        outDoc[k] = {
+          cats: Array.isArray(v.cats) ? [...v.cats] : ["住宿", "車費", "飲食", "衣服", "藥妝", "門票", "其他", "機票"],
+          active: [], custom: {}, entries: {}, manual: [], hidden: [], order: []
+        };
+      } else if (k === "createdAt" || k === "updatedAt") {
+        outDoc[k] = typeof v === "string" ? nowIso : (typeof v === "number" ? nowTs : emptyDefaultFor(v));
+      } else if (keepTopKeys.has(k)) {
+        outDoc[k] = deepClone(v);
+        expectedKeptImages += imgCounter(v).total;
+      } else {
+        outDoc[k] = emptyDefaultFor(v);
+      }
+    }
+
+    const inputByDate = new Map();
+    for (let i = 0; i < payload.days.length; i++) {
+      const d = payload.days[i];
+      assert(d && typeof d === "object" && typeof d.date === "string", `第 ${i + 1} 筆 day 缺少 date 字串`);
+      assert(targetDateSet.has(d.date), `AI 輸出的日期 ${d.date} 不在設定的範圍（${startDate} ～ ${endDate}）內`);
+      assert(!inputByDate.has(d.date), `AI 輸出包含重複日期：${d.date}`);
+      inputByDate.set(d.date, d);
+    }
+
+    const warnings = [];
+    if (!emptyShell) {
+      const missingDates = targetDates.filter(dt => !inputByDate.has(dt));
+      if (missingDates.length > 0) {
+        warnings.push(`以下日期 AI 未提供內容，已自動建立為空白日：${missingDates.join("、")}`);
+      }
+    }
+
+    for (const dt of targetDates) {
+      const dayObj = buildDaySkeleton(templateDoc, usedIds, dt);
+      const srcDay = inputByDate.get(dt);
+      if (srcDay) {
+        for (const [k, v] of Object.entries(srcDay)) {
+          if (k === "date" || k === "events" || k === "dn") continue;
+          assert(!FORBIDDEN_DAY_EDIT_KEYS.has(k), `日期 ${dt} 禁止直接設定 ${k}`);
+          assert(DAY_SCHEMA.has(k), `日期 ${dt} 出現原網站範本沒有的日欄位：${k}`);
+          assert(DAY_SCHEMA.get(k).has(jsType(v)), `日期 ${dt} 的日欄位 "${k}" 型別不符`);
+          dayObj[k] = v;
+        }
+        const srcEvents = srcDay.events || [];
+        assert(Array.isArray(srcEvents), `日期 ${dt} 的 events 必須是陣列`);
+        for (let idx = 0; idx < srcEvents.length; idx++) {
+          const item = srcEvents[idx];
+          assert(item && typeof item === "object" && !Array.isArray(item), `日期 ${dt} 第 ${idx + 1} 筆活動格式錯誤`);
+          let kind = "", fields = {}, memoHtml = "";
+          if (Object.prototype.hasOwnProperty.call(item, "fields")) {
+            assert(item.fields && typeof item.fields === "object" && !Array.isArray(item.fields),
+              `日期 ${dt} 第 ${idx + 1} 筆活動的 fields 必須是物件`);
+            fields = { ...item.fields };
+            kind = item.kind !== undefined ? item.kind : (fields.kind !== undefined ? fields.kind : "");
+            memoHtml = typeof item.memo_html === "string" ? item.memo_html : "";
+          } else {
+            for (const [fk, fv] of Object.entries(item)) {
+              if (fk === "memo_html") memoHtml = typeof fv === "string" ? fv : "";
+              else if (fk === "kind") kind = fv;
+              else fields[fk] = fv;
+            }
+          }
+          if (Object.prototype.hasOwnProperty.call(fields, "time")) {
+            validateTimeStr(fields.time, `日期 ${dt} 第 ${idx + 1} 筆（${fields.title || "未命名"}）`);
+          }
+          dayObj.events.push(makeEventFromSchema(templateDoc, usedIds, dt, kind, fields, memoHtml));
+        }
+        if (autoSort && dayObj.events.length > 1) reorderByTime(dayObj);
+      }
+      outDoc.days.push(dayObj);
+    }
+
+    const serialized = JSON.stringify(outDoc, null, 2);
+    const newDoc = JSON.parse(serialized);
+
+    // ===== 6/6 Strict Verification =====
+    const checkpoints = [];
+    const checkpoint = (name) => checkpoints.push(name);
+
+    assert(deepEqual(Object.keys(templateDoc), Object.keys(newDoc)), "新檔頂層 key 集合或順序與範本不符");
+    checkpoint("頂層鍵結構");
+
+    assert(deepEqual(newDoc.days.map(d => d.date), targetDates), "新檔日期序列與設定不符");
+    const dayIds = newDoc.days.map(d => d.id);
+    assert(dayIds.length === new Set(dayIds).size, "新檔存在重複的 day id");
+    checkpoint("天數與日期");
+
+    const newDayEvIds = new Set(dayIds);
+    for (const d of newDoc.days) for (const e of d.events) newDayEvIds.add(e.id);
+    for (const nid of newDayEvIds) assert(!oldIds.has(nid), `偵測到與範本重複的舊 id：${nid}`);
+    const newImgs = imgCounter(newDoc);
+    assert(newImgs.marker === newImgs.total, "存在非標準 data:image 字串");
+    assert(newImgs.total === expectedKeptImages, `Base64 圖片數異常（預期 ${expectedKeptImages}，實際 ${newImgs.total}）`);
+    checkpoint("零舊資料殘留");
+
+    let totalEvents = 0, refCards = 0, memoCount = 0;
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        totalEvents++;
+        if (ev.time === "") refCards++;
+        if (ev.memo) {
+          memoCount++;
+          assert(typeof ev.memo === "object" && typeof ev.memo.title === "string" && typeof ev.memo.html === "string",
+            `活動 ${ev.id} 的 memo 格式異常`);
+        }
+        assert(ID_RE.test(ev.id), `新活動 id 格式不符：${ev.id}`);
+        assert(VALID_KINDS.has(ev.kind !== undefined ? ev.kind : ""), `活動 ${ev.id} kind 不合法`);
+        const missing = [...BASE_KEYS].filter(k => !Object.prototype.hasOwnProperty.call(ev, k));
+        assert(missing.length === 0, `活動 ${ev.id} 缺少必備欄位：${missing.join(", ")}`);
+        for (const [k, v] of Object.entries(ev)) {
+          if (k === "memo") continue;
+          assert(EV_SCHEMA.has(k), `活動 ${ev.id} 出現範本沒有的欄位：${k}`);
+          assert(EV_SCHEMA.get(k).has(jsType(v)), `活動 ${ev.id} 欄位 "${k}" 型別不符`);
+        }
+      }
+    }
+    checkpoint("活動Schema/型別");
+
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        if (ev.time !== undefined) validateTimeStr(ev.time, `活動 ${ev.id}`);
+      }
+    }
+    checkpoint("時間格式");
+
+    const allEvIds = [];
+    for (const day of newDoc.days) {
+      for (const ev of day.events) {
+        assert(ev.dayDate === day.date, `活動 ${ev.id} 的 dayDate 與所屬日不一致`);
+        allEvIds.push(ev.id);
+      }
+    }
+    assert(allEvIds.length === new Set(allEvIds).size, "新檔存在重複的 event id");
+    checkpoint("dayDate/id唯一");
+
+    assert(checkpoints.length === TOTAL_NEW_CHECKS, `驗收段落未全部執行：${checkpoints.length}/${TOTAL_NEW_CHECKS}`);
+
+    return {
+      newDoc,
+      serialized,
+      filename: sanitizeFilename(cleanTitle),
+      checkpoints,
+      totalChecks: TOTAL_NEW_CHECKS,
+      warnings,
+      stats: {
+        daysCount: newDoc.days.length,
+        eventsCount: totalEvents,
+        refCards,
+        memoCount,
+        base64Count: newImgs.total,
+        byteSize: new Blob([serialized]).size
+      }
+    };
+  }
+
+  return {
+    sha256,
+    inspectDoc,
+    inspectTemplate,
+    expandDateRange,
+    buildLightweightView,
+    buildAiPrompt,
+    buildNewTripPrompt,
+    extractJsonBlock,
+    applyAndVerify,
+    buildNewTripAndVerify,
+    nextVersionFilename,
+    sanitizeFilename
+  };
+})();
+
+/* =========================================================================
+   UI Controller (v3 Dual Mode + Section Scope Picker)
+   ========================================================================= */
+(() => {
+  if (typeof document === "undefined") return;
+
+  const SECTION_DEFS = [
+    { key: "days", icon: "🗓️", label: "每日行程", countFn: i => `${i.daysCount}天・${i.eventsCount}筆`, defaultOn: true },
+    { key: "shopping", icon: "🛍️", label: "購物清單", countFn: i => `${i.shoppingCount}筆`, defaultOn: false },
+    { key: "luggage", icon: "🧳", label: "行李清單", countFn: i => `${i.luggageCount}筆`, defaultOn: false },
+    { key: "todos", icon: "✅", label: "旅行待辦", countFn: i => `${i.todosCount}筆`, defaultOn: false },
+    { key: "backups", icon: "📌", label: "備用行程", countFn: i => `${i.backupsListsCount}組・${i.backupsItemsCount}筆`, defaultOn: false },
+    { key: "accommodations", icon: "🏨", label: "住宿資訊", countFn: i => `${i.accommodationsCount}間`, defaultOn: false },
+    { key: "flights_weather", icon: "✈️", label: "航班與天氣", countFn: i => `航班${i.flightsCount}・天氣${i.weatherCount}`, defaultOn: false },
+    { key: "info", icon: "ℹ️", label: "旅程資訊", countFn: i => `${i.infoCount}筆`, defaultOn: false },
+    { key: "budget", icon: "💰", label: "預算紀錄", countFn: i => `${i.budgetCount}筆`, defaultOn: false }
+  ];
+
+  const state = {
+    mode: "patch",
+    selectedSections: new Set(["days"]),
+    originalDoc: null,
+    originalFilename: "",
+    currentDoc: null,
+    currentFilename: "",
+    undoStack: [],
+    pendingResult: null,
+    tplDoc: null,
+    tplFilename: "",
+    tplInfo: null,
+    pendingNewTrip: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function escHtml(s) {
+    return String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function trunc(val, n = 80) {
+    const s = typeof val === "string" ? val : JSON.stringify(val);
+    if (s === undefined) return "(無)";
+    return s.length <= n ? s : s.slice(0, n) + `...(共${s.length}字)`;
+  }
+
+  function formatBytes(n) {
+    if (n < 1024) return `${n} B`;
+    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+    return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  function downloadJson(jsonText, filename) {
+    const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function switchMode(mode) {
+    state.mode = mode;
+    const isNew = mode === "new";
+    $("appHeader").classList.toggle("mode-new", isNew);
+    $("tabPatch").classList.toggle("active", !isNew);
+    $("tabNew").classList.toggle("active", isNew);
+    $("tabPatch").setAttribute("aria-selected", String(!isNew));
+    $("tabNew").setAttribute("aria-selected", String(isNew));
+    $("patchModeView").classList.toggle("hidden", isNew);
+    $("newModeView").classList.toggle("hidden", !isNew);
+    $("headerSub").textContent = isNew
+      ? "載入舊檔擷取欄位骨架・零舊資料殘留・6/6 新旅程防呆驗收"
+      : "支援行程・購物・行李・待辦・備用・住宿・航班・資訊・預算｜9/9 強制防呆驗收";
+
+    if (isNew && state.currentDoc) $("reuseFromPatchWrap").classList.remove("hidden");
+    else $("reuseFromPatchWrap").classList.add("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  $("tabPatch").addEventListener("click", () => switchMode("patch"));
+  $("tabNew").addEventListener("click", () => switchMode("new"));
+
+  // =========================================================================
+  // MODE 1 UI LOGIC
+  // =========================================================================
+  function loadIntoPatchState(doc, filename, alertHtml) {
+    state.originalDoc = JSON.parse(JSON.stringify(doc));
+    state.originalFilename = filename;
+    state.currentDoc = JSON.parse(JSON.stringify(doc));
+    state.currentFilename = filename;
+    state.undoStack = [];
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    $("patchError").innerHTML = "";
+    $("fileDropLabel").textContent = `已載入：${filename}（點此可重新選擇）`;
+    $("fileAlert").innerHTML = alertHtml;
+    refreshPatchUI();
+  }
+
+  function renderScopeChips(info) {
+    $("scopeGrid").innerHTML = SECTION_DEFS.map(s => {
+      const checked = state.selectedSections.has(s.key);
+      return `
+        <label class="scope-chip">
+          <input type="checkbox" data-sec="${s.key}" ${checked ? "checked" : ""}>
+          <div>
+            <span>${s.icon} ${s.label}</span>
+            <span class="sc-sub">${escHtml(s.countFn(info))}</span>
+          </div>
+        </label>
+      `;
+    }).join("");
+
+    $("scopeGrid").querySelectorAll("input[data-sec]").forEach(chk => {
+      chk.addEventListener("change", () => {
+        if (chk.checked) state.selectedSections.add(chk.dataset.sec);
+        else state.selectedSections.delete(chk.dataset.sec);
+        refreshLightPreview();
+      });
+    });
+  }
+
+  function setScopePreset(keys) {
+    state.selectedSections = new Set(keys);
+    $("scopeGrid").querySelectorAll("input[data-sec]").forEach(chk => {
+      chk.checked = state.selectedSections.has(chk.dataset.sec);
+    });
+    refreshLightPreview();
+  }
+
+  function refreshPatchUI() {
+    if (!state.currentDoc) return;
+    const serialized = JSON.stringify(state.currentDoc, null, 2);
+    const byteSize = new Blob([serialized]).size;
+    const info = ItineraryEngine.inspectDoc(state.currentDoc, byteSize);
+
+    $("summaryWrap").classList.remove("hidden");
+    $("step2Card").classList.remove("disabled");
+    $("step3Card").classList.remove("disabled");
+
+    $("tripBanner").innerHTML = `
+      <div class="tb-title">📍 ${escHtml(info.destination)}</div>
+      <div class="tb-meta">${escHtml(info.start || "?")} ～ ${escHtml(info.end || "?")}（${info.daysCount} 天）${info.title && info.title !== info.destination ? " ・ " + escHtml(trunc(info.title, 48)) : ""}</div>
+    `;
+
+    $("metricsGrid").innerHTML = `
+      <div class="metric"><div class="val">${info.daysCount}天 / ${info.eventsCount}筆</div><div class="lbl">行程活動（參考卡 ${info.refCards}）</div></div>
+      <div class="metric"><div class="val">${info.shoppingCount} / ${info.luggageCount} / ${info.todosCount}</div><div class="lbl">購物 / 行李 / 待辦</div></div>
+      <div class="metric"><div class="val">${info.backupsItemsCount} / ${info.accommodationsCount}</div><div class="lbl">備用項目 / 住宿</div></div>
+      <div class="metric"><div class="val">${info.base64Count}</div><div class="lbl">受保護 Base64 圖</div></div>
+      <div class="metric"><div class="val">${info.shortcutsCount} / ${info.mapsCount}</div><div class="lbl">捷徑 / 地圖短網址</div></div>
+      <div class="metric"><div class="val">${formatBytes(info.byteSize)}</div><div class="lbl">檔案大小</div></div>
+    `;
+
+    $("fileNameBadge").textContent = state.currentFilename;
+    if (state.undoStack.length === 0) {
+      $("versionStatus").textContent = "已鎖定原始基準（修補後將由程式自動執行 9/9 無損比對，無需人工逐筆檢查）";
+      $("btnUndo").classList.add("hidden");
+      $("btnReset").classList.add("hidden");
+      $("btnDownloadCurrent").classList.add("hidden");
+    } else {
+      $("versionStatus").textContent = `已套用 ${state.undoStack.length} 次修補（隨時可復原或下載）`;
+      $("btnUndo").classList.remove("hidden");
+      $("btnReset").classList.remove("hidden");
+      $("btnDownloadCurrent").classList.remove("hidden");
+    }
+
+    renderScopeChips(info);
+    refreshLightPreview();
+  }
+
+  function refreshLightPreview() {
+    if (!state.currentDoc) return;
+    const sections = [...state.selectedSections];
+    const hasAny = sections.length > 0;
+    $("btnCopyFullPrompt").disabled = !hasAny;
+    $("btnCopyLightOnly").disabled = !hasAny;
+    if (!hasAny) {
+      $("lightStats").textContent = "請至少勾選 1 個區塊。";
+      $("lightPreview").textContent = "";
+      return;
+    }
+    const includeMemoText = $("optIncludeMemoText").checked;
+    const light = ItineraryEngine.buildLightweightView(state.currentDoc, { sections, includeMemoText });
+    const lightJson = JSON.stringify(light, null, 2);
+    const fullSize = new Blob([JSON.stringify(state.currentDoc, null, 2)]).size;
+    const lightSize = new Blob([lightJson]).size;
+    const ratio = fullSize > 0 ? Math.max(0, Math.round((1 - lightSize / fullSize) * 100)) : 0;
+    $("lightStats").textContent =
+      `已選 ${sections.length} 個區塊｜輕量版大小：${formatBytes(lightSize)}（較原檔縮減約 ${ratio}%）`;
+    $("lightPreview").textContent = lightJson;
+  }
+
+  function handlePatchFile(file) {
+    if (!file) return;
+    $("fileAlert").innerHTML = "";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        ItineraryEngine.inspectDoc(parsed, file.size);
+        loadIntoPatchState(
+          parsed,
+          file.name,
+          `<div class="alert alert-success">✅ 原檔前置檢查通過，已自動鎖定所有圖片與連結基準。</div>`
+        );
+        showToast("已成功載入旅程 JSON");
+      } catch (err) {
+        $("fileAlert").innerHTML = `<div class="alert alert-error">❌ 讀取或前置檢查失敗：${escHtml(err.message)}</div>`;
+      }
+    };
+    reader.onerror = () => {
+      $("fileAlert").innerHTML = `<div class="alert alert-error">❌ 無法讀取檔案，請重試。</div>`;
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function renderFieldChangeRows(fieldChanges, memoAppended) {
+    let rows = "";
+    for (const fc of fieldChanges || []) {
+      rows += `<li><strong>${escHtml(fc.key)}</strong>：<span class="old-val">${escHtml(trunc(fc.oldVal))}</span> → <span class="new-val">${escHtml(trunc(fc.newVal))}</span></li>`;
+    }
+    if (memoAppended) {
+      const tag = memoAppended.created ? "新建筆記" : "追加筆記（原筆記完整保留）";
+      rows += `<li><strong>memo（${tag}）</strong>：<span class="new-val">+ ${escHtml(trunc(memoAppended.html, 120))}</span></li>`;
+    }
+    return rows || `<li style="color:var(--muted)">（欄位值與原本相同）</li>`;
+  }
+
+  function renderPatchPreview(result) {
+    state.pendingResult = result;
+    const { diff, checkpoints, totalChecks, stats, touchedSectionLabels } = result;
+    const outName = ItineraryEngine.nextVersionFilename(state.currentFilename);
+
+    $("verifyBanner").innerHTML = `
+      <div class="alert alert-success">
+        <strong>✅ 驗收全數通過｜checks executed: ${checkpoints.length}/${totalChecks}</strong><br>
+        輸出檔名：<code>${escHtml(outName)}</code><br>
+        未動天數：${stats.untouchedDays}｜events：${stats.eventsBefore} → ${stats.eventsAfter}｜參考卡：${stats.refBefore} → ${stats.refAfter}<br>
+        Base64：${stats.base64Before} → ${stats.base64After}｜shortcuts：${stats.shortcutsBefore} → ${stats.shortcutsAfter}｜maps短網址：${stats.mapsBefore} → ${stats.mapsAfter}
+        ${touchedSectionLabels.length ? `<br>同時異動區塊：${touchedSectionLabels.map(escHtml).join("、")}` : ""}
+      </div>
+    `;
+
+    $("checksWrap").innerHTML = checkpoints
+      .map((c, idx) => `<span class="check-pill">✓ ${idx + 1}. ${escHtml(c)}</span>`)
+      .join("");
+
+    let html = "";
+
+    // 1. All deletions first
+    if (diff.delete.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--danger);">🗑️ 即將刪除項目（共 ${diff.delete.length} 筆）</div>`;
+      for (const d of diff.delete) {
+        const warnBits = [];
+        if (d.hasMemo) warnBits.push("含筆記");
+        if (d.imgCount > 0) warnBits.push(`含 ${d.imgCount} 張 Base64 圖片`);
+        html += `
+          <div class="diff-item del">
+            <div class="diff-meta">${escHtml(d.meta)}</div>
+            <strong>${escHtml(d.title)}</strong>
+            ${warnBits.length ? `<div style="margin-top:4px;color:var(--danger);font-weight:600;">⚠️ 注意：此筆${warnBits.join("、")}，刪除後將一併移除</div>` : ""}
+          </div>
+        `;
+      }
+    }
+
+    // 2. Days / Events
+    if (diff.modify.length > 0) {
+      html += `<div class="diff-group-title">✏️ 修改行程活動（${diff.modify.length} 筆）</div>`;
+      for (const m of diff.modify) {
+        html += `
+          <div class="diff-item">
+            <div class="diff-meta">${escHtml(m.dn)} (${escHtml(m.date)}) ・ id: ${escHtml(m.id)}</div>
+            <strong>${escHtml(m.title)}</strong>
+            <ul class="diff-kv">${renderFieldChangeRows(m.fieldChanges, m.memoAppended)}</ul>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.move.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--purple);">🚚 行程跨日搬移（${diff.move.length} 筆）</div>`;
+      for (const mv of diff.move) {
+        const keep = ["原 id"];
+        if (mv.hasMemo) keep.push("原筆記");
+        if (mv.hasImage) keep.push("原圖片");
+        html += `
+          <div class="diff-item move">
+            <div class="diff-meta">id: ${escHtml(mv.id)} ・ 完整保留：${keep.join("、")}</div>
+            <strong>${escHtml(mv.title)}</strong>
+            <div>${escHtml(mv.fromDn)} (${escHtml(mv.fromDate)}) → <strong>${escHtml(mv.toDn)} (${escHtml(mv.toDate)})</strong></div>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.add.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--success);">➕ 新增行程活動（${diff.add.length} 筆）</div>`;
+      for (const a of diff.add) {
+        const extra = Object.entries(a.fields)
+          .filter(([k]) => k !== "time" && k !== "title")
+          .map(([k, v]) => `<li><strong>${escHtml(k)}</strong>：${escHtml(trunc(v))}</li>`)
+          .join("");
+        html += `
+          <div class="diff-item add">
+            <div class="diff-meta">${escHtml(a.dn)} (${escHtml(a.date)}) ・ 新 id: ${escHtml(a.id)} ・ kind: ${escHtml(JSON.stringify(a.kind))}</div>
+            <strong>${escHtml(a.time ? a.time + " " : "(參考卡) ")}${escHtml(a.title)}</strong>
+            ${extra || a.hasMemo ? `<ul class="diff-kv">${extra}${a.hasMemo ? "<li><strong>memo</strong>：已建立初始筆記</li>" : ""}</ul>` : ""}
+          </div>
+        `;
+      }
+    }
+
+    if (diff.dayModify.length > 0) {
+      html += `<div class="diff-group-title" style="color:var(--warn);">📅 修改日期標題／備註（${diff.dayModify.length} 天）</div>`;
+      for (const dm of diff.dayModify) {
+        html += `
+          <div class="diff-item day">
+            <div class="diff-meta">${escHtml(dm.dn)} (${escHtml(dm.date)})</div>
+            <ul class="diff-kv">${renderFieldChangeRows(dm.changes, null)}</ul>
+          </div>
+        `;
+      }
+    }
+
+    if (diff.reorder.length > 0) {
+      html += `<div class="diff-group-title" style="color:#0369a1;">🔀 同日依時間重排（${diff.reorder.length} 天）</div>`;
+      for (const r of diff.reorder) {
+        html += `
+          <div class="diff-item reorder">
+            <div class="diff-meta">${escHtml(r.dn)} (${escHtml(r.date)}) ・ 參考卡鎖定原位</div>
+            <div>${r.changed ? "已依時間重新排序（共 " + r.afterOrder.length + " 筆活動）" : "順序原已符合時間先後"}</div>
+          </div>
+        `;
+      }
+    }
+
+    // 3. Other Website Sections
+    for (const sec of diff.sections) {
+      const cnt = sec.meta.length + sec.modifies.length + sec.adds.length + sec.moves.length;
+      if (cnt === 0) continue;
+      html += `<div class="diff-group-title" style="color:var(--pink);">${escHtml(sec.sectionLabel)}（${cnt} 項異動）</div>`;
+      for (const mt of sec.meta) {
+        html += `<div class="diff-item extra"><strong>${escHtml(mt)}</strong></div>`;
+      }
+      for (const mv of sec.moves) {
+        html += `<div class="diff-item move"><strong>搬移：</strong>${escHtml(mv)}</div>`;
+      }
+      for (const m of sec.modifies) {
+        html += `
+          <div class="diff-item extra">
+            <div class="diff-meta">${m.sub ? escHtml(m.sub) + " ・ " : ""}id: ${escHtml(m.id)}</div>
+            <strong>${escHtml(m.title)}</strong>
+            <ul class="diff-kv">${renderFieldChangeRows(m.fieldChanges, m.memoAppended)}</ul>
+          </div>
+        `;
+      }
+      for (const a of sec.adds) {
+        html += `
+          <div class="diff-item add">
+            <div class="diff-meta">新增${a.sub ? "・" + escHtml(a.sub) : ""} ・ id: ${escHtml(a.id)}</div>
+            <strong>${escHtml(a.title)}</strong>
+            ${a.extra && a.extra.length ? `<div style="font-size:12.5px;color:var(--muted);margin-top:3px;">${a.extra.map(escHtml).join(" ｜ ")}</div>` : ""}
+          </div>
+        `;
+      }
+    }
+
+    if (diff.topModify.length > 0) {
+      html += `<div class="diff-group-title">⚙️ 旅程基本資料變更（${diff.topModify.length} 項）</div>`;
+      for (const tm of diff.topModify) {
+        html += `
+          <div class="diff-item">
+            <strong>${escHtml(tm.key)}</strong>：<span class="old-val">${escHtml(trunc(tm.oldVal))}</span> → <span class="new-val">${escHtml(trunc(tm.newVal))}</span>
+          </div>
+        `;
+      }
+    }
+
+    $("diffContainer").innerHTML = html;
+
+    if (diff.delete.length > 0) {
+      $("deleteConfirmWrap").classList.remove("hidden");
+      $("deleteConfirmText").textContent = `我已逐筆確認要永久刪除上述 ${diff.delete.length} 筆項目`;
+      $("chkConfirmDelete").checked = false;
+      $("btnApplyAndDownload").disabled = true;
+      $("btnApplyOnly").disabled = true;
+    } else {
+      $("deleteConfirmWrap").classList.add("hidden");
+      $("btnApplyAndDownload").disabled = false;
+      $("btnApplyOnly").disabled = false;
+    }
+
+    $("step4Card").classList.remove("hidden");
+    $("step4Card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function commitPendingPatch(shouldDownload) {
+    if (!state.pendingResult) return;
+    const { newDoc, serialized } = state.pendingResult;
+    const nextFilename = ItineraryEngine.nextVersionFilename(state.currentFilename);
+
+    state.undoStack.push({
+      doc: JSON.parse(JSON.stringify(state.currentDoc)),
+      filename: state.currentFilename
+    });
+
+    state.currentDoc = newDoc;
+    state.currentFilename = nextFilename;
+    state.pendingResult = null;
+
+    if (shouldDownload) {
+      downloadJson(serialized, nextFilename);
+      showToast(`已套用並下載 ${nextFilename}`);
+    } else {
+      showToast(`已套用至工作版本（${nextFilename}），可繼續下一輪修改`);
+    }
+
+    $("patchInput").value = "";
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+  }
+
+  // Wire Mode 1 events
+  const fileDrop = $("fileDrop");
+  const fileInput = $("fileInput");
+  fileDrop.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    handlePatchFile(f);
+  });
+  fileDrop.addEventListener("dragover", (e) => { e.preventDefault(); fileDrop.classList.add("dragover"); });
+  fileDrop.addEventListener("dragleave", () => fileDrop.classList.remove("dragover"));
+  fileDrop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    fileDrop.classList.remove("dragover");
+    handlePatchFile(e.dataTransfer.files[0]);
+  });
+
+  $("presetDaysOnly").addEventListener("click", () => setScopePreset(["days"]));
+  $("presetCommon").addEventListener("click", () => setScopePreset(["days", "shopping", "todos", "backups"]));
+  $("presetPrep").addEventListener("click", () => setScopePreset(["shopping", "luggage", "todos"]));
+  $("presetAll").addEventListener("click", () => setScopePreset(SECTION_DEFS.map(s => s.key)));
+
+  $("optIncludeMemoText").addEventListener("change", refreshLightPreview);
+
+  $("btnCopyFullPrompt").addEventListener("click", async () => {
+    const text = ItineraryEngine.buildAiPrompt(state.currentDoc, {
+      sections: [...state.selectedSections],
+      includeMemoText: $("optIncludeMemoText").checked
+    });
+    const ok = await copyText(text);
+    showToast(ok ? "✅ 已複製「AI 提示詞＋輕量資料」，直接貼給 AI 即可！" : "複製失敗，請手動選取下方預覽複製");
+  });
+
+  $("btnCopyLightOnly").addEventListener("click", async () => {
+    const light = ItineraryEngine.buildLightweightView(state.currentDoc, {
+      sections: [...state.selectedSections],
+      includeMemoText: $("optIncludeMemoText").checked
+    });
+    const ok = await copyText(JSON.stringify(light, null, 2));
+    showToast(ok ? "✅ 已複製已選區塊的輕量 JSON" : "複製失敗");
+  });
+
+  $("btnPasteClip").addEventListener("click", async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      $("patchInput").value = txt;
+      showToast("已貼上剪貼簿內容");
+    } catch (_) {
+      showToast("瀏覽器未授權直接讀取剪貼簿，請長按輸入框手動貼上");
+    }
+  });
+
+  $("btnClearPatch").addEventListener("click", () => {
+    $("patchInput").value = "";
+    $("patchError").innerHTML = "";
+    $("step4Card").classList.add("hidden");
+    state.pendingResult = null;
+  });
+
+  $("btnPreviewPatch").addEventListener("click", () => {
+    $("patchError").innerHTML = "";
+    $("step4Card").classList.add("hidden");
+    state.pendingResult = null;
+    try {
+      const result = ItineraryEngine.applyAndVerify(state.currentDoc, $("patchInput").value);
+      renderPatchPreview(result);
+    } catch (err) {
+      $("patchError").innerHTML = `<div class="alert alert-error">❌ 驗證未通過（已中止，原資料毫髮無傷）：<br>${escHtml(err.message)}</div>`;
+    }
+  });
+
+  $("chkConfirmDelete").addEventListener("change", (e) => {
+    $("btnApplyAndDownload").disabled = !e.target.checked;
+    $("btnApplyOnly").disabled = !e.target.checked;
+  });
+
+  $("btnApplyAndDownload").addEventListener("click", () => commitPendingPatch(true));
+  $("btnApplyOnly").addEventListener("click", () => commitPendingPatch(false));
+
+  $("btnUndo").addEventListener("click", () => {
+    if (state.undoStack.length === 0) return;
+    const prev = state.undoStack.pop();
+    state.currentDoc = prev.doc;
+    state.currentFilename = prev.filename;
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+    showToast("↩️ 已復原至上一步");
+  });
+
+  $("btnReset").addEventListener("click", () => {
+    if (!state.originalDoc) return;
+    if (!confirm("確定要放棄所有已套用的修改，重置回剛上傳的原始檔案嗎？")) return;
+    state.currentDoc = JSON.parse(JSON.stringify(state.originalDoc));
+    state.currentFilename = state.originalFilename;
+    state.undoStack = [];
+    state.pendingResult = null;
+    $("step4Card").classList.add("hidden");
+    refreshPatchUI();
+    showToast("🔄 已重置回原始上傳檔");
+  });
+
+  $("btnDownloadCurrent").addEventListener("click", () => {
+    if (!state.currentDoc) return;
+    downloadJson(JSON.stringify(state.currentDoc, null, 2), state.currentFilename);
+    showToast(`⬇️ 已下載 ${state.currentFilename}`);
+  });
+
+  // =========================================================================
+  // MODE 2 UI LOGIC (NEW TRIP FROM TEMPLATE)
+  // =========================================================================
+  function getKeptTopKeys() {
+    const kept = new Set();
+    document.querySelectorAll("#extraTopFieldsList input[type='checkbox']").forEach(chk => {
+      if (chk.checked) kept.add(chk.dataset.key);
+    });
+    return kept;
+  }
+
+  function updateNewDateSummary() {
+    const startDate = $("newStartDate").value;
+    const endDate = $("newEndDate").value;
+    $("newDateError").innerHTML = "";
+    if (!startDate || !endDate) {
+      $("newDateSummary").classList.add("hidden");
+      return null;
+    }
+    try {
+      const dates = ItineraryEngine.expandDateRange(startDate, endDate);
+      $("newDateSummary").textContent =
+        `📅 共 ${dates.length} 天｜D1 (${dates[0]}) ～ D${dates.length} (${dates[dates.length - 1]})`;
+      $("newDateSummary").classList.remove("hidden");
+      return dates;
+    } catch (err) {
+      $("newDateSummary").classList.add("hidden");
+      $("newDateError").innerHTML = `<div class="alert alert-error">❌ ${escHtml(err.message)}</div>`;
+      return null;
+    }
+  }
+
+  function loadTemplateDoc(doc, filename) {
+    const info = ItineraryEngine.inspectTemplate(doc, new Blob([JSON.stringify(doc)]).size);
+    state.tplDoc = JSON.parse(JSON.stringify(doc));
+    state.tplFilename = filename;
+    state.tplInfo = info;
+    state.pendingNewTrip = null;
+
+    $("tplFileDropLabel").textContent = `已載入範本：${filename}（點此可更換）`;
+    $("tplAlert").innerHTML = `<div class="alert alert-success">✅ 範本結構擷取完成！已鎖定頂層鍵順序與欄位型別，舊行程與圖片不會帶入新旅程。</div>`;
+    $("tplSummaryWrap").classList.remove("hidden");
+    $("newStep2Card").classList.remove("disabled");
+    $("newStep3Card").classList.remove("disabled");
+    $("newStep4Card").classList.add("hidden");
+    $("newTripError").innerHTML = "";
+
+    $("tplMetricsGrid").innerHTML = `
+      <div class="metric"><div class="val">${info.topKeys.length}</div><div class="lbl">頂層鍵數</div></div>
+      <div class="metric"><div class="val">${info.eventEditableFields.length}</div><div class="lbl">活動欄位數</div></div>
+      <div class="metric"><div class="val">${info.validKinds.length}</div><div class="lbl">合法 kind 數</div></div>
+    `;
+
+    if (info.extraTopFields.length > 0) {
+      $("extraTopFieldsBox").classList.remove("hidden");
+      $("extraTopFieldsList").innerHTML = info.extraTopFields.map(f => {
+        const badge = f.imgCount > 0
+          ? `<span class="field-badge imgwarn">含 ${f.imgCount} 張圖</span>`
+          : (f.defaultKeep
+              ? `<span class="field-badge keep">預設沿用</span>`
+              : `<span class="field-badge clear">預設清空</span>`);
+        return `
+          <div class="top-field-item">
+            <label>
+              <input type="checkbox" data-key="${escHtml(f.key)}" ${f.defaultKeep ? "checked" : ""}>
+              <div>
+                <strong>${escHtml(f.key)}</strong>
+                <div style="font-size:12px;color:var(--muted);">${escHtml(f.summary)}</div>
+              </div>
+            </label>
+            ${badge}
+          </div>
+        `;
+      }).join("");
+    } else {
+      $("extraTopFieldsBox").classList.add("hidden");
+    }
+
+    $("tplSchemaPreview").textContent = JSON.stringify({
+      top_keys_order: info.topKeys,
+      day_editable_fields: info.dayEditableFields,
+      valid_kinds: info.validKinds,
+      event_editable_fields: info.eventEditableFields
+    }, null, 2);
+
+    updateNewDateSummary();
+  }
+
+  function handleTemplateFile(file) {
+    if (!file) return;
+    $("tplAlert").innerHTML = "";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        loadTemplateDoc(parsed, file.name);
+        showToast("已載入格式範本");
+      } catch (err) {
+        $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 範本解析失敗：${escHtml(err.message)}</div>`;
+      }
+    };
+    reader.onerror = () => {
+      $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 無法讀取檔案，請重試。</div>`;
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function renderNewTripPreview(result) {
+    state.pendingNewTrip = result;
+    const { newDoc, filename, checkpoints, totalChecks, warnings, stats } = result;
+
+    $("newVerifyBanner").innerHTML = `
+      <div class="alert alert-success">
+        <strong>✅ 新旅程驗收全數通過｜checks executed: ${checkpoints.length}/${totalChecks}</strong><br>
+        輸出檔名：<code>${escHtml(filename)}</code><br>
+        天數：${stats.daysCount} 天｜活動數：${stats.eventsCount} 筆｜參考卡：${stats.refCards} 張｜含筆記：${stats.memoCount} 筆<br>
+        Base64 圖片：${stats.base64Count} 張｜檔案大小：${formatBytes(stats.byteSize)}
+      </div>
+    `;
+
+    $("newChecksWrap").innerHTML = checkpoints
+      .map((c, idx) => `<span class="check-pill">✓ ${idx + 1}. ${escHtml(c)}</span>`)
+      .join("");
+
+    $("newWarningsWrap").innerHTML = warnings.length > 0
+      ? `<div class="alert alert-warn">ℹ️ ${warnings.map(w => escHtml(w)).join("<br>")}</div>`
+      : "";
+
+    let html = "";
+    newDoc.days.forEach((day, idx) => {
+      const evHtml = day.events.length === 0
+        ? `<div style="font-size:13px;color:var(--muted);padding:4px 0;">（本日目前無活動）</div>`
+        : day.events.map(ev => {
+            const isRef = (ev.time || "") === "";
+            const kindChip = ev.kind ? `<span class="kind-chip">${escHtml(ev.kind)}</span>` : "";
+            const memoChip = ev.memo ? `<span class="memo-chip">📝 筆記</span>` : "";
+            return `
+              <div class="ev-row">
+                <span class="ev-time ${isRef ? "ref" : ""}">${isRef ? "參考卡" : escHtml(ev.time)}</span>
+                <div style="flex:1;">
+                  <strong>${escHtml(ev.title || "(無標題)")}</strong>${kindChip}${memoChip}
+                  <div style="font-size:11.5px;color:var(--muted);font-family:ui-monospace,monospace;">id: ${escHtml(ev.id)}</div>
+                </div>
+              </div>
+            `;
+          }).join("");
+
+      html += `
+        <div class="day-preview-card">
+          <div class="day-preview-head">
+            <div><span class="dn-tag">D${idx + 1}</span>${escHtml(day.date)}${day.title ? " ・ " + escHtml(day.title) : ""}</div>
+            <span style="font-size:12px;color:var(--muted);">${day.events.length} 筆</span>
+          </div>
+          <div class="day-preview-body">
+            ${day.note ? `<div style="font-size:12.5px;color:var(--warn);margin-bottom:6px;">📌 ${escHtml(day.note)}</div>` : ""}
+            ${evHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    $("newPreviewContainer").innerHTML = html;
+    $("newStep4Card").classList.remove("hidden");
+    $("newStep4Card").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function runNewTripBuild(emptyShell) {
+    $("newTripError").innerHTML = "";
+    $("newStep4Card").classList.add("hidden");
+    state.pendingNewTrip = null;
+    try {
+      const result = ItineraryEngine.buildNewTripAndVerify(
+        state.tplDoc,
+        {
+          title: $("newTripTitle").value,
+          startDate: $("newStartDate").value,
+          endDate: $("newEndDate").value,
+          keepTopKeys: getKeptTopKeys(),
+          autoSort: $("optAutoSortNewTrip").checked,
+          emptyShell
+        },
+        emptyShell ? null : $("newTripInput").value
+      );
+      renderNewTripPreview(result);
+    } catch (err) {
+      $("newTripError").innerHTML = `<div class="alert alert-error">❌ 驗證未通過（已中止）：<br>${escHtml(err.message)}</div>`;
+      $("newTripError").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  // Wire Mode 2 events
+  const tplFileDrop = $("tplFileDrop");
+  const tplFileInput = $("tplFileInput");
+  tplFileDrop.addEventListener("click", () => tplFileInput.click());
+  tplFileInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    handleTemplateFile(f);
+  });
+  tplFileDrop.addEventListener("dragover", (e) => { e.preventDefault(); tplFileDrop.classList.add("dragover"); });
+  tplFileDrop.addEventListener("dragleave", () => tplFileDrop.classList.remove("dragover"));
+  tplFileDrop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    tplFileDrop.classList.remove("dragover");
+    handleTemplateFile(e.dataTransfer.files[0]);
+  });
+
+  $("btnReuseFromPatch").addEventListener("click", () => {
+    if (!state.currentDoc) return;
+    try {
+      loadTemplateDoc(state.currentDoc, state.currentFilename);
+      showToast("已沿用修補模式的檔案作為格式範本");
+    } catch (err) {
+      $("tplAlert").innerHTML = `<div class="alert alert-error">❌ 範本解析失敗：${escHtml(err.message)}</div>`;
+    }
+  });
+
+  $("newStartDate").addEventListener("change", () => {
+    if ($("newStartDate").value && !$("newEndDate").value) {
+      $("newEndDate").value = $("newStartDate").value;
+    }
+    updateNewDateSummary();
+  });
+  $("newEndDate").addEventListener("change", updateNewDateSummary);
+
+  $("btnCopyNewTripPrompt").addEventListener("click", async () => {
+    const title = $("newTripTitle").value.trim();
+    const startDate = $("newStartDate").value;
+    const endDate = $("newEndDate").value;
+    if (!title) {
+      showToast("請先填寫「新旅程名稱」");
+      $("newTripTitle").focus();
+      return;
+    }
+    if (!updateNewDateSummary()) {
+      showToast("請先填寫正確的起訖日期");
+      return;
+    }
+    const prompt = ItineraryEngine.buildNewTripPrompt(state.tplDoc, { title, startDate, endDate });
+    const ok = await copyText(prompt);
+    showToast(ok ? "✅ 已複製「新建旅程 AI 提示詞」，直接貼給 AI 即可！" : "複製失敗");
+  });
+
+  $("btnBuildEmptyShell").addEventListener("click", () => runNewTripBuild(true));
+  $("btnPreviewNewTrip").addEventListener("click", () => runNewTripBuild(false));
+
+  $("btnPasteNewClip").addEventListener("click", async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      $("newTripInput").value = txt;
+      showToast("已貼上剪貼簿內容");
+    } catch (_) {
+      showToast("瀏覽器未授權直接讀取剪貼簿，請長按輸入框手動貼上");
+    }
+  });
+
+  $("btnClearNewTrip").addEventListener("click", () => {
+    $("newTripInput").value = "";
+    $("newTripError").innerHTML = "";
+    $("newStep4Card").classList.add("hidden");
+    state.pendingNewTrip = null;
+  });
+
+  $("btnDownloadNewTrip").addEventListener("click", () => {
+    if (!state.pendingNewTrip) return;
+    downloadJson(state.pendingNewTrip.serialized, state.pendingNewTrip.filename);
+    showToast(`⬇️ 已下載新旅程 ${state.pendingNewTrip.filename}`);
+  });
+
+  $("btnLoadIntoPatchMode").addEventListener("click", () => {
+    if (!state.pendingNewTrip) return;
+    const { newDoc, filename } = state.pendingNewTrip;
+    loadIntoPatchState(
+      newDoc,
+      filename,
+      `<div class="alert alert-info">🆕 已從「建立新旅程」載入 <strong>${escHtml(filename)}</strong>，現在可繼續使用修補模式補充行程、購物或待辦。</div>`
+    );
+    switchMode("patch");
+    showToast("已切換至修補模式，可繼續微調新旅程");
+  });
+})();
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { ItineraryEngine };
+}
+</script>
+</body>
+</html>
