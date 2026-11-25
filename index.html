@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>旅のノート JSON 安全修補工具 v3</title>
+<title>旅のノート JSON 安全修補工具 v3.1</title>
 <style>
   :root {
     --bg: #f5f6f8;
@@ -830,7 +830,7 @@
         </div>
       </div>
 
-      <textarea id="patchInput" placeholder='直接貼上 AI 回覆的 JSON 修改指令（會自動去掉 ```json 標記），例如：
+      <textarea id="patchInput" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder='直接貼上 AI 回覆的 JSON 修改指令（會自動去掉 ```json 標記），例如：
 {
   "modify": [{ "id": "...", "fields": { "time": "10:30" } }],
   "shopping": {
@@ -1555,7 +1555,9 @@ const ItineraryEngine = (() => {
     if (blocks.length > 1) {
       throw new Error(`偵測到 ${blocks.length} 個 JSON 程式碼區塊，請只貼上「單一」區塊以避免誤套用。`);
     }
-    throw new Error("無法解析 JSON 格式，請確認貼上的內容完整且括號、逗號正確。");
+    const curly = /[\u201c\u201d\u2018\u2019]/.test(trimmed);
+    throw new Error("無法解析 JSON 格式，請確認貼上的內容完整且括號、逗號正確。" +
+      (curly ? "（偵測到彎引號，請直接按 AI 程式碼區塊的「複製」按鈕，不要手動輸入或經其他軟體轉貼。）" : ""));
   }
 
   function reorderByTime(day) {
@@ -1614,12 +1616,24 @@ const ItineraryEngine = (() => {
     }
 
     if (typeof memoHtml === "string" && memoHtml.length > 0) {
-      newEv.memo = { title: "筆記", html: memoHtml };
+      newEv.memo = { title: "筆記", html: assertSafeMemoHtml(memoHtml, "新增活動的 memo_html") };
     }
     return newEv;
   }
 
+  // v3.1：筆記 HTML 安全檢查（原網站開啟筆記時雖會 clean()，此處再擋一次，避免髒資料進檔）
+  function assertSafeMemoHtml(html, label) {
+    assert(typeof html === "string", `${label} 必須是字串`);
+    assert(!/<\s*\/?\s*(script|iframe|object|embed|style|link|meta|base|form|svg|math)\b/i.test(html),
+      `${label} 含不允許的 HTML 標籤（script / iframe / style 等）`);
+    assert(!/<[^>]*\son[a-z]+\s*=/i.test(html), `${label} 含事件屬性（onerror / onclick 等）`);
+    assert(!/(href|src)\s*=\s*["']?\s*(javascript:|vbscript:|data:(?!image\/(png|jpe?g|webp|gif);base64,))/i.test(html),
+      `${label} 含不安全的連結或資料來源`);
+    return html;
+  }
+
   function applyAppendMemo(obj, idLabel, appendHtml, createIfMissing) {
+    assertSafeMemoHtml(appendHtml, `${idLabel} 的 append_memo`);
     if (!obj.memo) {
       assert(createIfMissing === true,
         `${idLabel} 原本沒有筆記，需明確設定 "create_memo_if_missing": true 才可新建`);
@@ -1628,6 +1642,49 @@ const ItineraryEngine = (() => {
     }
     obj.memo.html = (obj.memo.html || "") + appendHtml;
     return { created: false, html: appendHtml };
+  }
+
+  // v3.1：預算與其他區塊的連動提醒（鏡像原網站 sources() 的 key 規則；只提醒，不改資料）
+  function budgetSourceKeys(doc) {
+    const m = new Map();
+    (doc.flights || []).forEach((f, i) => m.set("f:" + i, `${f.direction || "航班"} ${[f.from, f.to].filter(Boolean).join(" → ")}`.trim()));
+    (doc.accommodations || []).forEach((a, i) => m.set("a:" + (a.id || i), a.name || "住宿"));
+    (doc.days || []).forEach((d, di) => (d.events || []).forEach((e, ei) => {
+      const id = e.id || ("d" + di + "e" + ei);
+      if (["景點", "活動", "餐廳", "咖啡店"].includes(e.kind)) m.set("e:" + id, e.title || "行程項目");
+      if (["地鐵", "巴士", "的士", "渡輪", "自駕"].includes(e.transport)) m.set("et:" + id, "前往 " + (e.title || "行程項目"));
+    }));
+    (doc.shopping || []).forEach((x, i) => m.set("s:" + (x.id || i), x.text || "購物項目"));
+    return m;
+  }
+
+  function budgetLinkWarnings(oDoc, nDoc, patch) {
+    const warns = [];
+    const entries = (oDoc.budget && oDoc.budget.entries) || {};
+    const oSrc = budgetSourceKeys(oDoc), nSrc = budgetSourceKeys(nDoc);
+    const hasValue = (e) => e && ((e.a !== null && e.a !== undefined) || e.p === true);
+    const delIdx = ((patch.flights && Array.isArray(patch.flights.delete)) ? patch.flights.delete : []).filter(Number.isInteger);
+    const minDel = delIdx.length ? Math.min(...delIdx) : Infinity;
+    for (const [key, e] of Object.entries(entries)) {
+      if (!hasValue(e)) continue;
+      const label = e.last || oSrc.get(key) || key;
+      const amt = (e.a !== null && e.a !== undefined) ? `${e.cu || "HKD"} ${e.a}` : "未填金額";
+      const st = e.p ? "已付" : "未付";
+      if (key.startsWith("f:")) {
+        const i = Number(key.slice(2));
+        if (delIdx.includes(i)) {
+          warns.push(`預算「${label}」（${amt}・${st}）綁定的航班（索引 ${i}）將被刪除；原網站預算頁會把它顯示為「原項目已移除」。`);
+        } else if (i > minDel) {
+          warns.push(`預算「${label}」（${amt}・${st}）綁定航班索引 ${key}；刪除前面的航班後索引會前移，這筆金額會錯位到另一班航班。刪除前請先在原網站把金額改到正確位置，或改為手動預算項目。`);
+        }
+      } else if (oSrc.has(key) && !nSrc.has(key)) {
+        warns.push(`預算「${label}」（${amt}・${st}）的來源項目（${key}）將被刪除或不再符合預算來源條件；原網站預算頁會把它顯示為「原項目已移除」（金額仍保留）。`);
+      }
+    }
+    if (patch.top_modify && ("start" in patch.top_modify || "end" in patch.top_modify)) {
+      warns.push("已變更出發／回程日期；本工具不會同步調整 days，請匯入原網站後在「編輯旅程」檢查天數是否需要同步。");
+    }
+    return warns;
   }
 
   function verifyMemoAppendOnly(origObj, newObj, label) {
@@ -1968,10 +2025,19 @@ const ItineraryEngine = (() => {
     for (const [k, v] of Object.entries(topModify)) {
       assert(!MANAGED_SECTION_KEYS.has(k), `禁止透過 top_modify 整塊覆寫 ${k}，請使用專屬區塊指令`);
       assert(Object.prototype.hasOwnProperty.call(origDoc, k), `top_modify 包含原檔不存在的頂層欄位：${k}`);
+      // v3.1：型別與格式驗證（原版完全不檢查，null / 物件 / 壞日期都會被寫入）
+      assert(v !== null && typeof v !== "object", `top_modify.${k} 必須是純文字、數字或布林值（不可為 null、物件或陣列）`);
+      assert(jsType(v) === jsType(origDoc[k]), `top_modify.${k} 型別不符原檔（原為 ${jsType(origDoc[k])}，收到 ${jsType(v)}）`);
+      if (k === "start" || k === "end") {
+        assert(v === "" || (DATE_RE.test(v) && !Number.isNaN(Date.parse(v + "T12:00:00"))), `top_modify.${k} 必須是 YYYY-MM-DD 或空字串：${JSON.stringify(v)}`);
+      }
+      if (k === "weatherUrl") assert(v === "" || /^https?:\/\//i.test(v), "top_modify.weatherUrl 必須是 http(s) 網址或空字串");
       TOUCHED_TOP_KEYS.add(k);
       diff.topModify.push({ key: k, oldVal: origDoc[k], newVal: v });
       data[k] = v;
     }
+
+    if (data.start && data.end) assert(data.end >= data.start, `top_modify 後回程日期（${data.end}）早於出發日期（${data.start}）`);
 
     // ----- B. days / events (v1/v2 full logic) -----
     const modifyList = patch.modify || [];
@@ -2348,7 +2414,7 @@ const ItineraryEngine = (() => {
           };
           if (obj.dayDate) assert(DATE_RE.test(obj.dayDate), `shopping.add dayDate 格式錯誤：${obj.dayDate}`);
           if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
-            obj.memo = { title: "筆記", html: item.memo_html };
+            obj.memo = { title: "筆記", html: assertSafeMemoHtml(item.memo_html, "memo_html") };
           }
           return obj;
         },
@@ -2381,7 +2447,7 @@ const ItineraryEngine = (() => {
             done: Boolean(item.done)
           };
           if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
-            obj.memo = { title: "筆記", html: item.memo_html };
+            obj.memo = { title: "筆記", html: assertSafeMemoHtml(item.memo_html, "memo_html") };
           }
           return obj;
         },
@@ -2410,7 +2476,7 @@ const ItineraryEngine = (() => {
             done: Boolean(item.done)
           };
           if (typeof item.memo_html === "string" && item.memo_html.length > 0) {
-            obj.memo = { title: "筆記", html: item.memo_html };
+            obj.memo = { title: "筆記", html: assertSafeMemoHtml(item.memo_html, "memo_html") };
           }
           return obj;
         },
@@ -2645,7 +2711,7 @@ const ItineraryEngine = (() => {
           used: []
         };
         if (typeof a.memo_html === "string" && a.memo_html.length > 0) {
-          newIt.memo = { title: "筆記", html: a.memo_html };
+          newIt.memo = { title: "筆記", html: assertSafeMemoHtml(a.memo_html, "memo_html") };
         }
         dstList.items.push(newIt);
         bTrack.addItems.add(newIt.id);
@@ -3330,6 +3396,7 @@ const ItineraryEngine = (() => {
       checkpoints,
       totalChecks: TOTAL_PATCH_CHECKS,
       touchedSectionLabels: diff.sections.map(s => s.sectionLabel),
+      linkWarnings: budgetLinkWarnings(origDoc, newDoc, patch),
       stats: {
         untouchedDays,
         eventsBefore: oEv.size,
@@ -3730,7 +3797,17 @@ const ItineraryEngine = (() => {
     return ok;
   }
 
-  function downloadJson(jsonText, filename) {
+  async function downloadJson(jsonText, filename) {
+    // v3.1：手機優先使用分享面板（可「儲存到檔案」），與原網站匯出方式一致；失敗才退回一般下載
+    try {
+      const file = new File([jsonText], filename, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
     const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -3739,7 +3816,7 @@ const ItineraryEngine = (() => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   function switchMode(mode) {
@@ -3931,6 +4008,10 @@ const ItineraryEngine = (() => {
       .join("");
 
     let html = "";
+    const lw = result.linkWarnings || [];
+    if (lw.length > 0) {
+      html += `<div class="alert alert-warn"><strong>⚠️ 跨區塊連動提醒（${lw.length} 項）</strong><ul style="margin:6px 0 0 18px;padding:0;">${lw.map(w => `<li>${escHtml(w)}</li>`).join("")}</ul></div>`;
+    }
 
     // 1. All deletions first
     if (diff.delete.length > 0) {
@@ -4064,9 +4145,12 @@ const ItineraryEngine = (() => {
 
     $("diffContainer").innerHTML = html;
 
-    if (diff.delete.length > 0) {
+    if (diff.delete.length > 0 || lw.length > 0) {
+      const parts = [];
+      if (diff.delete.length > 0) parts.push(`逐筆確認要永久刪除上述 ${diff.delete.length} 筆項目`);
+      if (lw.length > 0) parts.push(`了解上述 ${lw.length} 項連動提醒`);
       $("deleteConfirmWrap").classList.remove("hidden");
-      $("deleteConfirmText").textContent = `我已逐筆確認要永久刪除上述 ${diff.delete.length} 筆項目`;
+      $("deleteConfirmText").textContent = "我已" + parts.join("，並");
       $("chkConfirmDelete").checked = false;
       $("btnApplyAndDownload").disabled = true;
       $("btnApplyOnly").disabled = true;
